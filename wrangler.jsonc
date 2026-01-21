@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "armata-rampa",
+  "name": "ussil",
   "compatibility_date": "2026-01-21",
   "pages_build_output_dir": "./dist",
   "compatibility_flags": ["nodejs_compat"],
@@ -9,14 +9,14 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "armata_db",
+      "database_name": "ussil_db",
       "database_id": "local-dev-db"
     }
   ],
   
   // Environment variables (set via .dev.vars for local or wrangler secret for prod)
   "vars": {
-    "JWT_SECRET": "armata-rampa-jwt-secret-2026-change-in-production",
-    "ADMIN_EMAIL": "admin@armata-rampa.ru"
+    "JWT_SECRET": "ussil-jwt-secret-2026-change-in-production",
+    "ADMIN_EMAIL": "admin@ussil.ru"
   }
 }

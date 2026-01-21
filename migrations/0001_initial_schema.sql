@@ -194,6 +194,47 @@ CREATE TABLE IF NOT EXISTS admin_sessions (
   FOREIGN KEY (user_id) REFERENCES admin_users(id) ON DELETE CASCADE
 );
 
+-- Кейсы (выполненные проекты)
+CREATE TABLE IF NOT EXISTS cases (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  description TEXT,
+  client_name TEXT,
+  client_logo TEXT,
+  location TEXT,
+  completion_date TEXT,
+  result_text TEXT,
+  main_image TEXT,
+  images TEXT,
+  sort_order INTEGER DEFAULT 0,
+  is_active INTEGER DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Партнёры
+CREATE TABLE IF NOT EXISTS partners (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  logo_url TEXT,
+  website_url TEXT,
+  description TEXT,
+  sort_order INTEGER DEFAULT 0,
+  is_active INTEGER DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Загруженные изображения
+CREATE TABLE IF NOT EXISTS uploads (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  filename TEXT NOT NULL,
+  original_name TEXT,
+  mime_type TEXT,
+  size INTEGER,
+  url TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Индексы для оптимизации
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
 CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug);
@@ -203,3 +244,5 @@ CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
 CREATE INDEX IF NOT EXISTS idx_leads_created ON leads(created_at);
 CREATE INDEX IF NOT EXISTS idx_news_published ON news(is_published, published_at);
 CREATE INDEX IF NOT EXISTS idx_pages_slug ON pages(slug);
+CREATE INDEX IF NOT EXISTS idx_cases_active ON cases(is_active);
+CREATE INDEX IF NOT EXISTS idx_partners_active ON partners(is_active);

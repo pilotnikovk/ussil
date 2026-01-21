@@ -234,12 +234,12 @@ const sendEmailNotification = async (env: Bindings, lead: any) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Armata-Rampa <noreply@armata-rampa.ru>',
+        from: 'USSIL <noreply@ussil.ru>',
         to: [env.ADMIN_EMAIL],
         subject: `Новая заявка от ${lead.name}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #1e40af;">Новая заявка с сайта Armata-Rampa</h2>
+            <h2 style="color: #1e40af;">Новая заявка с сайта USSIL</h2>
             <table style="width: 100%; border-collapse: collapse;">
               <tr><td style="padding: 10px; border-bottom: 1px solid #e5e7eb;"><strong>Имя:</strong></td><td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${lead.name}</td></tr>
               <tr><td style="padding: 10px; border-bottom: 1px solid #e5e7eb;"><strong>Телефон:</strong></td><td style="padding: 10px; border-bottom: 1px solid #e5e7eb;"><a href="tel:${lead.phone}">${lead.phone}</a></td></tr>
@@ -548,6 +548,157 @@ app.delete('/api/admin/categories/:id', async (c) => {
   }
 })
 
+// Cases API
+app.get('/api/cases', async (c) => {
+  try {
+    const result = await c.env.DB.prepare('SELECT * FROM cases WHERE is_active = 1 ORDER BY sort_order').all()
+    return c.json({ success: true, data: result.results })
+  } catch (e) {
+    return c.json({ success: false, error: 'Failed to fetch cases' }, 500)
+  }
+})
+
+app.get('/api/admin/cases', async (c) => {
+  try {
+    const result = await c.env.DB.prepare('SELECT * FROM cases ORDER BY sort_order').all()
+    return c.json({ success: true, data: result.results })
+  } catch (e) {
+    return c.json({ success: false, error: 'Failed to fetch cases' }, 500)
+  }
+})
+
+app.post('/api/admin/cases', async (c) => {
+  try {
+    const { title, description, client_name, client_logo, location, completion_date, result_text, main_image, images, sort_order, is_active } = await c.req.json()
+    const result = await c.env.DB.prepare(`
+      INSERT INTO cases (title, description, client_name, client_logo, location, completion_date, result_text, main_image, images, sort_order, is_active)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(title, description || '', client_name || '', client_logo || '', location || '', completion_date || '', result_text || '', main_image || '', JSON.stringify(images || []), sort_order || 0, is_active ? 1 : 0).run()
+    return c.json({ success: true, id: result.meta.last_row_id })
+  } catch (e: any) {
+    return c.json({ success: false, error: e.message || 'Failed to create case' }, 500)
+  }
+})
+
+app.put('/api/admin/cases/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const { title, description, client_name, client_logo, location, completion_date, result_text, main_image, images, sort_order, is_active } = await c.req.json()
+    await c.env.DB.prepare(`
+      UPDATE cases SET title = ?, description = ?, client_name = ?, client_logo = ?, location = ?, completion_date = ?, result_text = ?, main_image = ?, images = ?, sort_order = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(title, description || '', client_name || '', client_logo || '', location || '', completion_date || '', result_text || '', main_image || '', JSON.stringify(images || []), sort_order || 0, is_active ? 1 : 0, id).run()
+    return c.json({ success: true })
+  } catch (e: any) {
+    return c.json({ success: false, error: e.message || 'Failed to update case' }, 500)
+  }
+})
+
+app.delete('/api/admin/cases/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    await c.env.DB.prepare('DELETE FROM cases WHERE id = ?').bind(id).run()
+    return c.json({ success: true })
+  } catch (e) {
+    return c.json({ success: false, error: 'Failed to delete case' }, 500)
+  }
+})
+
+// Partners API
+app.get('/api/partners', async (c) => {
+  try {
+    const result = await c.env.DB.prepare('SELECT * FROM partners WHERE is_active = 1 ORDER BY sort_order').all()
+    return c.json({ success: true, data: result.results })
+  } catch (e) {
+    return c.json({ success: false, error: 'Failed to fetch partners' }, 500)
+  }
+})
+
+app.get('/api/admin/partners', async (c) => {
+  try {
+    const result = await c.env.DB.prepare('SELECT * FROM partners ORDER BY sort_order').all()
+    return c.json({ success: true, data: result.results })
+  } catch (e) {
+    return c.json({ success: false, error: 'Failed to fetch partners' }, 500)
+  }
+})
+
+app.post('/api/admin/partners', async (c) => {
+  try {
+    const { name, logo_url, website_url, description, sort_order, is_active } = await c.req.json()
+    const result = await c.env.DB.prepare(`
+      INSERT INTO partners (name, logo_url, website_url, description, sort_order, is_active)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).bind(name, logo_url || '', website_url || '', description || '', sort_order || 0, is_active ? 1 : 0).run()
+    return c.json({ success: true, id: result.meta.last_row_id })
+  } catch (e: any) {
+    return c.json({ success: false, error: e.message || 'Failed to create partner' }, 500)
+  }
+})
+
+app.put('/api/admin/partners/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const { name, logo_url, website_url, description, sort_order, is_active } = await c.req.json()
+    await c.env.DB.prepare(`
+      UPDATE partners SET name = ?, logo_url = ?, website_url = ?, description = ?, sort_order = ?, is_active = ?
+      WHERE id = ?
+    `).bind(name, logo_url || '', website_url || '', description || '', sort_order || 0, is_active ? 1 : 0, id).run()
+    return c.json({ success: true })
+  } catch (e: any) {
+    return c.json({ success: false, error: e.message || 'Failed to update partner' }, 500)
+  }
+})
+
+app.delete('/api/admin/partners/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    await c.env.DB.prepare('DELETE FROM partners WHERE id = ?').bind(id).run()
+    return c.json({ success: true })
+  } catch (e) {
+    return c.json({ success: false, error: 'Failed to delete partner' }, 500)
+  }
+})
+
+// Image Upload API (stores URL in database for later use)
+app.post('/api/admin/upload', async (c) => {
+  try {
+    const formData = await c.req.formData()
+    const file = formData.get('file') as File
+    
+    if (!file) {
+      return c.json({ success: false, error: 'No file provided' }, 400)
+    }
+    
+    // For Cloudflare Pages, we'll use base64 data URL for now
+    // In production, you'd use Cloudflare R2 or similar
+    const arrayBuffer = await file.arrayBuffer()
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+    const dataUrl = 'data:' + file.type + ';base64,' + base64
+    
+    // Store in database
+    const result = await c.env.DB.prepare(`
+      INSERT INTO uploads (filename, original_name, mime_type, size, url)
+      VALUES (?, ?, ?, ?, ?)
+    `).bind(
+      Date.now() + '-' + file.name,
+      file.name,
+      file.type,
+      file.size,
+      dataUrl
+    ).run()
+    
+    return c.json({ 
+      success: true, 
+      url: dataUrl,
+      id: result.meta.last_row_id,
+      filename: file.name 
+    })
+  } catch (e: any) {
+    return c.json({ success: false, error: e.message || 'Upload failed' }, 500)
+  }
+})
+
 // ==========================================
 // STATIC FILES
 // ==========================================
@@ -559,13 +710,14 @@ app.use('/images/*', serveStatic())
 // LIGHT THEME 2026 - CALM COLORS
 // ==========================================
 
-const renderPage = (title: string, content: string, seoTitle?: string, seoDescription?: string) => {
+const renderPage = (title: string, content: string, seoTitle?: string, seoDescription?: string, settings?: Record<string, string>) => {
+  const siteName = settings?.site_name || 'USSIL'
   return `<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${seoTitle || title} | Armata-Rampa</title>
+  <title>${seoTitle || title} | ${siteName}</title>
   <meta name="description" content="${seoDescription || 'Производитель погрузочных рамп и эстакад. Собственное производство, гарантия качества, доставка по России.'}">
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -580,13 +732,13 @@ const renderPage = (title: string, content: string, seoTitle?: string, seoDescri
           fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
           colors: {
             primary: {
-              50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd',
-              400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8',
-              800: '#1e40af', 900: '#1e3a8a'
+              50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc',
+              400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1',
+              800: '#075985', 900: '#0c4a6e'
             },
             accent: {
-              50: '#fff7ed', 100: '#ffedd5', 200: '#fed7aa', 300: '#fdba74',
-              400: '#fb923c', 500: '#f97316', 600: '#ea580c', 700: '#c2410c'
+              50: '#fef3c7', 100: '#fde68a', 200: '#fcd34d', 300: '#fbbf24',
+              400: '#f59e0b', 500: '#d97706', 600: '#b45309', 700: '#92400e'
             },
             neutral: {
               50: '#fafafa', 100: '#f5f5f5', 200: '#e5e5e5', 300: '#d4d4d4',
@@ -603,7 +755,7 @@ const renderPage = (title: string, content: string, seoTitle?: string, seoDescri
   <link href="/static/styles.css" rel="stylesheet">
   
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"Organization","name":"Armata-Rampa","description":"Производитель погрузочных рамп и эстакад","url":"https://armata-rampa.ru"}
+  {"@context":"https://schema.org","@type":"Organization","name":"${siteName}","description":"Производитель погрузочных рамп и эстакад","url":"https://ussil.ru"}
   </script>
 </head>
 <body class="bg-neutral-50 text-neutral-800 font-sans antialiased">
@@ -617,6 +769,21 @@ const renderPage = (title: string, content: string, seoTitle?: string, seoDescri
 // Main page
 app.get('/', async (c) => {
   const settings = c.get('settings')
+  const siteName = settings.site_name || 'USSIL'
+  const logoUrl = settings.logo_url || 'https://www.genspark.ai/api/files/s/eBVbsOpD'
+  const heroBgImage = settings.hero_bg_image || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1920&h=1080&fit=crop'
+  
+  // Load cases and partners
+  let cases: any[] = []
+  let partners: any[] = []
+  try {
+    const casesResult = await c.env.DB.prepare('SELECT * FROM cases WHERE is_active = 1 ORDER BY sort_order LIMIT 6').all()
+    cases = casesResult.results || []
+  } catch (e) {}
+  try {
+    const partnersResult = await c.env.DB.prepare('SELECT * FROM partners WHERE is_active = 1 ORDER BY sort_order').all()
+    partners = partnersResult.results || []
+  } catch (e) {}
   
   const content = `
   <!-- Header -->
@@ -628,33 +795,28 @@ app.get('/', async (c) => {
           <span><i class="fas fa-clock text-primary-500 mr-2"></i>${settings.working_hours || 'Пн-Пт: 9:00-18:00'}</span>
         </div>
         <div class="flex items-center gap-4">
-          <a href="mailto:${settings.email || 'info@armata-rampa.ru'}" class="text-neutral-600 hover:text-primary-600 transition-colors">
-            <i class="fas fa-envelope mr-2"></i>${settings.email || 'info@armata-rampa.ru'}
+          <a href="mailto:${settings.email || 'info@ussil.ru'}" class="text-neutral-600 hover:text-primary-600 transition-colors">
+            <i class="fas fa-envelope mr-2"></i>${settings.email || 'info@ussil.ru'}
           </a>
         </div>
       </div>
       
       <nav class="flex items-center justify-between px-6 py-4">
         <a href="/" class="flex items-center gap-3">
-          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-lg shadow-primary-500/20">
-            <span class="text-white font-bold text-xl">A</span>
-          </div>
-          <div>
-            <span class="text-xl font-bold text-neutral-800">ARMATA</span>
-            <span class="text-xl font-bold text-accent-500">RAMPA</span>
-          </div>
+          <img src="${logoUrl}" alt="${siteName}" class="h-10 w-auto">
+          <span class="text-2xl font-bold text-neutral-800">${siteName}</span>
         </a>
         
         <div class="hidden lg:flex items-center gap-1">
           <a href="/katalog" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Каталог</a>
           <a href="/o-kompanii" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">О компании</a>
-          <a href="/portfolio" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Портфолио</a>
+          <a href="/kejsy" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Кейсы</a>
           <a href="/dostavka" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Доставка</a>
           <a href="/kontakty" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Контакты</a>
         </div>
         
         <div class="flex items-center gap-4">
-          <a href="tel:${settings.phone_main || '+74955553535'}" class="hidden md:flex items-center gap-3">
+          <a href="tel:${(settings.phone_main || '+74955553535').replace(/[^+\d]/g, '')}" class="hidden md:flex items-center gap-3">
             <div class="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center">
               <i class="fas fa-phone text-primary-600"></i>
             </div>
@@ -674,14 +836,15 @@ app.get('/', async (c) => {
     </div>
   </header>
 
-  <!-- Hero Section -->
-  <section class="relative bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 py-20 lg:py-28 overflow-hidden">
-    <div class="absolute inset-0 opacity-10">
-      <div class="absolute top-20 left-10 w-72 h-72 bg-white rounded-full blur-3xl"></div>
-      <div class="absolute bottom-10 right-10 w-96 h-96 bg-accent-500 rounded-full blur-3xl"></div>
+  <!-- Hero Section with Background Image -->
+  <section class="relative min-h-[600px] lg:min-h-[700px] flex items-center overflow-hidden">
+    <!-- Background Image with Overlay -->
+    <div class="absolute inset-0">
+      <img src="${heroBgImage}" alt="Складской терминал" class="w-full h-full object-cover">
+      <div class="absolute inset-0 bg-gradient-to-r from-neutral-900/90 via-neutral-900/70 to-neutral-900/50"></div>
     </div>
     
-    <div class="relative max-w-7xl mx-auto px-6">
+    <div class="relative max-w-7xl mx-auto px-6 py-20 lg:py-28">
       <div class="max-w-3xl">
         <div class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur rounded-full text-white/90 text-sm mb-6">
           <i class="fas fa-award"></i>
@@ -689,17 +852,16 @@ app.get('/', async (c) => {
         </div>
         
         <h1 class="text-4xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-          Погрузочные рампы и эстакады
-          <span class="text-accent-400">от производителя</span>
+          ${settings.hero_title || 'Погрузочные рампы и эстакады'}
+          <span class="text-accent-400">${settings.hero_subtitle || 'от производителя'}</span>
         </h1>
         
         <p class="text-xl text-white/80 mb-8 leading-relaxed">
-          Собственное производство во Владимире. Гарантия 1 год. 
-          Доставка по всей России. Цены от 250 000 ₽.
+          ${settings.hero_description || 'Собственное производство во Владимире. Гарантия 1 год. Доставка по всей России. Цены от 250 000 ₽.'}
         </p>
         
         <div class="flex flex-wrap gap-4">
-          <a href="/katalog" class="inline-flex items-center gap-2 px-8 py-4 bg-white text-primary-700 font-semibold rounded-xl hover:bg-neutral-100 transition-all shadow-xl">
+          <a href="/katalog" class="inline-flex items-center gap-2 px-8 py-4 bg-white text-neutral-800 font-semibold rounded-xl hover:bg-neutral-100 transition-all shadow-xl">
             <i class="fas fa-th-large"></i>
             Смотреть каталог
           </a>
@@ -711,15 +873,15 @@ app.get('/', async (c) => {
         
         <div class="flex flex-wrap gap-8 mt-12 pt-8 border-t border-white/20">
           <div>
-            <div class="text-3xl font-bold text-white">500+</div>
-            <div class="text-white/70">Проектов</div>
+            <div class="text-3xl font-bold text-white">${settings.hero_stat1_value || '500+'}</div>
+            <div class="text-white/70">${settings.hero_stat1_label || 'Проектов'}</div>
           </div>
           <div>
-            <div class="text-3xl font-bold text-white">12 лет</div>
-            <div class="text-white/70">На рынке</div>
+            <div class="text-3xl font-bold text-white">${settings.hero_stat2_value || '12 лет'}</div>
+            <div class="text-white/70">${settings.hero_stat2_label || 'На рынке'}</div>
           </div>
           <div>
-            <div class="text-3xl font-bold text-white">1 год</div>
+            <div class="text-3xl font-bold text-white">${settings.guarantee_years || '1'} год</div>
             <div class="text-white/70">Гарантия</div>
           </div>
           <div>
@@ -832,7 +994,7 @@ app.get('/', async (c) => {
               </div>
               <div>
                 <div class="text-white/60 text-sm">Email</div>
-                <a href="mailto:${settings.email || 'info@armata-rampa.ru'}" class="text-white font-semibold">${settings.email || 'info@armata-rampa.ru'}</a>
+                <a href="mailto:${settings.email || 'info@ussil.ru'}" class="text-white font-semibold">${settings.email || 'info@ussil.ru'}</a>
               </div>
             </div>
           </div>
@@ -866,16 +1028,69 @@ app.get('/', async (c) => {
     </div>
   </section>
 
+  <!-- Cases Section -->
+  <section class="py-16 lg:py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row md:items-end md:justify-between mb-12">
+        <div>
+          <h2 class="text-3xl lg:text-4xl font-bold text-neutral-800 mb-4">Наши кейсы</h2>
+          <p class="text-neutral-600">Реализованные проекты для ведущих компаний России</p>
+        </div>
+        <a href="/kejsy" class="inline-flex items-center gap-2 text-primary-600 font-semibold hover:text-primary-700 mt-4 md:mt-0">
+          Все кейсы <i class="fas fa-arrow-right"></i>
+        </a>
+      </div>
+      
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        ${cases.map((item: any) => `
+        <div class="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-neutral-100">
+          <div class="relative h-48 overflow-hidden">
+            <img src="${item.main_image || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&h=400&fit=crop'}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+            <div class="absolute bottom-4 left-4 right-4">
+              <span class="px-3 py-1 bg-white/90 backdrop-blur text-xs font-medium rounded-full text-neutral-700">${item.client_name || ''}</span>
+            </div>
+          </div>
+          <div class="p-6">
+            <h3 class="text-lg font-semibold text-neutral-800 mb-2">${item.title}</h3>
+            <p class="text-neutral-600 text-sm mb-3 line-clamp-2">${item.description || ''}</p>
+            ${item.location ? `<div class="flex items-center gap-2 text-xs text-neutral-500"><i class="fas fa-map-marker-alt"></i>${item.location}</div>` : ''}
+          </div>
+        </div>
+        `).join('')}
+      </div>
+    </div>
+  </section>
+
+  <!-- Partners Section -->
+  <section class="py-16 lg:py-20 bg-neutral-100">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl lg:text-4xl font-bold text-neutral-800 mb-4">Наши партнёры</h2>
+        <p class="text-neutral-600">Нам доверяют ведущие компании России</p>
+      </div>
+      
+      <div class="flex flex-wrap items-center justify-center gap-8 lg:gap-16">
+        ${partners.map((partner: any) => `
+        <div class="group">
+          ${partner.logo_url ? 
+            `<img src="${partner.logo_url}" alt="${partner.name}" class="h-12 w-auto grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300">` :
+            `<span class="text-xl font-bold text-neutral-400 group-hover:text-neutral-700 transition-colors">${partner.name}</span>`
+          }
+        </div>
+        `).join('')}
+      </div>
+    </div>
+  </section>
+
   <!-- Footer -->
   <footer class="bg-neutral-800 text-white py-12">
     <div class="max-w-7xl mx-auto px-6">
       <div class="grid md:grid-cols-4 gap-8 mb-8">
         <div>
           <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 rounded-lg bg-primary-500 flex items-center justify-center">
-              <span class="text-white font-bold">A</span>
-            </div>
-            <span class="text-lg font-bold">ARMATA<span class="text-accent-400">RAMPA</span></span>
+            <img src="${logoUrl}" alt="${siteName}" class="h-8 w-auto brightness-0 invert">
+            <span class="text-lg font-bold">${siteName}</span>
           </div>
           <p class="text-neutral-400 text-sm">Производитель погрузочных рамп и эстакад с 2010 года</p>
         </div>
@@ -893,6 +1108,7 @@ app.get('/', async (c) => {
           <h4 class="font-semibold mb-4">Информация</h4>
           <ul class="space-y-2 text-neutral-400 text-sm">
             <li><a href="/o-kompanii" class="hover:text-white transition-colors">О компании</a></li>
+            <li><a href="/kejsy" class="hover:text-white transition-colors">Кейсы</a></li>
             <li><a href="/dostavka" class="hover:text-white transition-colors">Доставка и оплата</a></li>
             <li><a href="/kontakty" class="hover:text-white transition-colors">Контакты</a></li>
           </ul>
@@ -902,21 +1118,21 @@ app.get('/', async (c) => {
           <h4 class="font-semibold mb-4">Контакты</h4>
           <ul class="space-y-2 text-neutral-400 text-sm">
             <li><i class="fas fa-phone mr-2 text-primary-400"></i>${settings.phone_main || '+7 (495) 555-35-35'}</li>
-            <li><i class="fas fa-envelope mr-2 text-primary-400"></i>${settings.email || 'info@armata-rampa.ru'}</li>
+            <li><i class="fas fa-envelope mr-2 text-primary-400"></i>${settings.email || 'info@ussil.ru'}</li>
             <li><i class="fas fa-map-marker-alt mr-2 text-primary-400"></i>${settings.address || 'г. Владимир'}</li>
           </ul>
         </div>
       </div>
       
       <div class="pt-8 border-t border-neutral-700 text-center text-neutral-500 text-sm">
-        &copy; 2024 Armata-Rampa. Все права защищены.
+        &copy; ${new Date().getFullYear()} ${siteName}. Все права защищены.
       </div>
     </div>
   </footer>
   `
   
-  return c.html(renderPage('Главная', content, 'Armata-Rampa — Погрузочные рампы и эстакады от производителя', 
-    'Производитель погрузочных рамп и эстакад. Мобильные рампы от 449 000 ₽, гидравлические рампы от 679 000 ₽. Гарантия 1 год. Доставка по России.'))
+  return c.html(renderPage('Главная', content, siteName + ' — Погрузочные рампы и эстакады от производителя', 
+    'Производитель погрузочных рамп и эстакад. Мобильные рампы от 449 000 ₽, гидравлические рампы от 679 000 ₽. Гарантия 1 год. Доставка по России.', settings))
 })
 
 // Catalog page
@@ -929,7 +1145,7 @@ app.get('/katalog', async (c) => {
           <div class="w-10 h-10 rounded-lg bg-primary-500 flex items-center justify-center">
             <span class="text-white font-bold">A</span>
           </div>
-          <span class="text-lg font-bold text-neutral-800">ARMATA<span class="text-accent-500">RAMPA</span></span>
+          <span class="text-lg font-bold text-neutral-800">USSIL</span>
         </a>
         <div class="hidden lg:flex items-center gap-1">
           <a href="/katalog" class="px-4 py-2 rounded-lg text-primary-600 bg-primary-50 font-medium">Каталог</a>
@@ -972,12 +1188,12 @@ app.get('/katalog', async (c) => {
 
   <footer class="bg-neutral-800 text-white py-8 mt-12">
     <div class="max-w-7xl mx-auto px-6 text-center text-neutral-400 text-sm">
-      &copy; 2024 Armata-Rampa. Все права защищены.
+      &copy; 2024 USSIL. Все права защищены.
     </div>
   </footer>
   `
   
-  return c.html(renderPage('Каталог продукции', content, 'Каталог рамп и эстакад | Armata-Rampa', 
+  return c.html(renderPage('Каталог продукции', content, 'Каталог рамп и эстакад | USSIL', 
     'Каталог погрузочных рамп и эстакад от производителя. Мобильные, гидравлические рампы, эстакады. Цены, характеристики.'))
 })
 
@@ -993,7 +1209,7 @@ app.get('/product/:slug', async (c) => {
           <div class="w-10 h-10 rounded-lg bg-primary-500 flex items-center justify-center">
             <span class="text-white font-bold">A</span>
           </div>
-          <span class="text-lg font-bold text-neutral-800">ARMATA<span class="text-accent-500">RAMPA</span></span>
+          <span class="text-lg font-bold text-neutral-800">USSIL</span>
         </a>
         <div class="hidden lg:flex items-center gap-1">
           <a href="/katalog" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Каталог</a>
@@ -1019,7 +1235,7 @@ app.get('/product/:slug', async (c) => {
 
   <footer class="bg-neutral-800 text-white py-8 mt-12">
     <div class="max-w-7xl mx-auto px-6 text-center text-neutral-400 text-sm">
-      &copy; 2024 Armata-Rampa. Все права защищены.
+      &copy; 2024 USSIL. Все права защищены.
     </div>
   </footer>
   `
@@ -1037,7 +1253,7 @@ app.get('/o-kompanii', async (c) => {
           <div class="w-10 h-10 rounded-lg bg-primary-500 flex items-center justify-center">
             <span class="text-white font-bold">A</span>
           </div>
-          <span class="text-lg font-bold text-neutral-800">ARMATA<span class="text-accent-500">RAMPA</span></span>
+          <span class="text-lg font-bold text-neutral-800">USSIL</span>
         </a>
         <div class="hidden lg:flex items-center gap-1">
           <a href="/katalog" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Каталог</a>
@@ -1051,11 +1267,11 @@ app.get('/o-kompanii', async (c) => {
 
   <main class="py-12">
     <div class="max-w-4xl mx-auto px-6">
-      <h1 class="text-3xl font-bold text-neutral-800 mb-8">О компании Armata-Rampa</h1>
+      <h1 class="text-3xl font-bold text-neutral-800 mb-8">О компании USSIL</h1>
       
       <div class="prose prose-lg max-w-none">
         <p class="text-neutral-600 text-lg leading-relaxed mb-6">
-          Компания Armata-Rampa — один из ведущих российских производителей погрузочного оборудования. 
+          Компания USSIL — один из ведущих российских производителей погрузочного оборудования. 
           С 2010 года мы разрабатываем и изготавливаем погрузочные рампы и эстакады для складов, 
           логистических центров и производственных предприятий.
         </p>
@@ -1089,13 +1305,13 @@ app.get('/o-kompanii', async (c) => {
 
   <footer class="bg-neutral-800 text-white py-8 mt-12">
     <div class="max-w-7xl mx-auto px-6 text-center text-neutral-400 text-sm">
-      &copy; 2024 Armata-Rampa. Все права защищены.
+      &copy; 2024 USSIL. Все права защищены.
     </div>
   </footer>
   `
   
-  return c.html(renderPage('О компании', content, 'О компании Armata-Rampa — производитель рамп и эстакад', 
-    'Armata-Rampa — российский производитель погрузочных рамп и эстакад с 2010 года. Собственное производство, гарантия качества.'))
+  return c.html(renderPage('О компании', content, 'О компании USSIL — производитель рамп и эстакад', 
+    'USSIL — российский производитель погрузочных рамп и эстакад с 2010 года. Собственное производство, гарантия качества.'))
 })
 
 app.get('/kontakty', async (c) => {
@@ -1109,7 +1325,7 @@ app.get('/kontakty', async (c) => {
           <div class="w-10 h-10 rounded-lg bg-primary-500 flex items-center justify-center">
             <span class="text-white font-bold">A</span>
           </div>
-          <span class="text-lg font-bold text-neutral-800">ARMATA<span class="text-accent-500">RAMPA</span></span>
+          <span class="text-lg font-bold text-neutral-800">USSIL</span>
         </a>
         <div class="hidden lg:flex items-center gap-1">
           <a href="/katalog" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Каталог</a>
@@ -1145,7 +1361,7 @@ app.get('/kontakty', async (c) => {
               </div>
               <div>
                 <div class="text-sm text-neutral-500">Email</div>
-                <a href="mailto:${settings.email || 'info@armata-rampa.ru'}" class="text-lg font-semibold text-neutral-800">${settings.email || 'info@armata-rampa.ru'}</a>
+                <a href="mailto:${settings.email || 'info@ussil.ru'}" class="text-lg font-semibold text-neutral-800">${settings.email || 'info@ussil.ru'}</a>
               </div>
             </div>
           </div>
@@ -1192,13 +1408,13 @@ app.get('/kontakty', async (c) => {
 
   <footer class="bg-neutral-800 text-white py-8 mt-12">
     <div class="max-w-7xl mx-auto px-6 text-center text-neutral-400 text-sm">
-      &copy; 2024 Armata-Rampa. Все права защищены.
+      &copy; 2024 USSIL. Все права защищены.
     </div>
   </footer>
   `
   
-  return c.html(renderPage('Контакты', content, 'Контакты | Armata-Rampa', 
-    'Контакты компании Armata-Rampa. Телефон, email, адрес производства.'))
+  return c.html(renderPage('Контакты', content, 'Контакты | USSIL', 
+    'Контакты компании USSIL. Телефон, email, адрес производства.'))
 })
 
 app.get('/dostavka', async (c) => {
@@ -1210,7 +1426,7 @@ app.get('/dostavka', async (c) => {
           <div class="w-10 h-10 rounded-lg bg-primary-500 flex items-center justify-center">
             <span class="text-white font-bold">A</span>
           </div>
-          <span class="text-lg font-bold text-neutral-800">ARMATA<span class="text-accent-500">RAMPA</span></span>
+          <span class="text-lg font-bold text-neutral-800">USSIL</span>
         </a>
         <div class="hidden lg:flex items-center gap-1">
           <a href="/katalog" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Каталог</a>
@@ -1253,12 +1469,12 @@ app.get('/dostavka', async (c) => {
 
   <footer class="bg-neutral-800 text-white py-8 mt-12">
     <div class="max-w-7xl mx-auto px-6 text-center text-neutral-400 text-sm">
-      &copy; 2024 Armata-Rampa. Все права защищены.
+      &copy; 2024 USSIL. Все права защищены.
     </div>
   </footer>
   `
   
-  return c.html(renderPage('Доставка и оплата', content, 'Доставка и оплата | Armata-Rampa', 
+  return c.html(renderPage('Доставка и оплата', content, 'Доставка и оплата | USSIL', 
     'Условия доставки погрузочных рамп и эстакад по России. Оплата с НДС.'))
 })
 
@@ -1280,7 +1496,7 @@ app.get('/admin/login', async (c) => {
       <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center mb-4 shadow-lg">
         <span class="text-3xl font-bold text-white">A</span>
       </div>
-      <h1 class="text-2xl font-bold text-neutral-800">Armata-Rampa</h1>
+      <h1 class="text-2xl font-bold text-neutral-800">USSIL</h1>
       <p class="text-neutral-500">Вход в админ-панель</p>
     </div>
     
@@ -1382,7 +1598,7 @@ app.get('/admin', async (c) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Админ-панель | Armata-Rampa CMS</title>
+  <title>Админ-панель | USSIL CMS</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" rel="stylesheet">
@@ -1405,7 +1621,7 @@ app.get('/admin', async (c) => {
     <!-- Sidebar -->
     <aside class="w-64 bg-white border-r border-neutral-200 flex flex-col fixed h-full">
       <div class="p-6 border-b border-neutral-100">
-        <h1 class="text-xl font-bold text-neutral-800">Armata-Rampa</h1>
+        <h1 class="text-xl font-bold text-neutral-800">USSIL</h1>
         <p class="text-neutral-500 text-sm">Система управления</p>
       </div>
       <nav class="p-4 space-y-1 flex-1 overflow-y-auto">
@@ -1417,6 +1633,12 @@ app.get('/admin', async (c) => {
         </a>
         <a href="#categories" onclick="showSection('categories')" class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-600 hover:bg-neutral-50 transition-colors">
           <i class="fas fa-folder w-5"></i> Категории
+        </a>
+        <a href="#cases" onclick="showSection('cases')" class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-600 hover:bg-neutral-50 transition-colors">
+          <i class="fas fa-briefcase w-5"></i> Кейсы
+        </a>
+        <a href="#partners" onclick="showSection('partners')" class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-600 hover:bg-neutral-50 transition-colors">
+          <i class="fas fa-handshake w-5"></i> Партнёры
         </a>
         <a href="#leads" onclick="showSection('leads')" class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-600 hover:bg-neutral-50 transition-colors">
           <i class="fas fa-envelope w-5"></i> Заявки
@@ -1539,6 +1761,56 @@ app.get('/admin', async (c) => {
         </div>
       </section>
 
+      <!-- Cases Section -->
+      <section id="section-cases" class="admin-section hidden">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-neutral-800">Кейсы</h2>
+          <button onclick="openCaseModal()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors flex items-center gap-2">
+            <i class="fas fa-plus"></i> Добавить кейс
+          </button>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden">
+          <table class="w-full">
+            <thead class="bg-neutral-50 border-b border-neutral-100">
+              <tr>
+                <th class="px-6 py-4 text-left text-sm text-neutral-500 font-medium">Фото</th>
+                <th class="px-6 py-4 text-left text-sm text-neutral-500 font-medium">Название</th>
+                <th class="px-6 py-4 text-left text-sm text-neutral-500 font-medium">Клиент</th>
+                <th class="px-6 py-4 text-left text-sm text-neutral-500 font-medium">Локация</th>
+                <th class="px-6 py-4 text-left text-sm text-neutral-500 font-medium">Статус</th>
+                <th class="px-6 py-4 text-left text-sm text-neutral-500 font-medium">Действия</th>
+              </tr>
+            </thead>
+            <tbody id="cases-table" class="divide-y divide-neutral-100"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Partners Section -->
+      <section id="section-partners" class="admin-section hidden">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-neutral-800">Партнёры</h2>
+          <button onclick="openPartnerModal()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors flex items-center gap-2">
+            <i class="fas fa-plus"></i> Добавить партнёра
+          </button>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden">
+          <table class="w-full">
+            <thead class="bg-neutral-50 border-b border-neutral-100">
+              <tr>
+                <th class="px-6 py-4 text-left text-sm text-neutral-500 font-medium">Логотип</th>
+                <th class="px-6 py-4 text-left text-sm text-neutral-500 font-medium">Название</th>
+                <th class="px-6 py-4 text-left text-sm text-neutral-500 font-medium">Сайт</th>
+                <th class="px-6 py-4 text-left text-sm text-neutral-500 font-medium">Порядок</th>
+                <th class="px-6 py-4 text-left text-sm text-neutral-500 font-medium">Статус</th>
+                <th class="px-6 py-4 text-left text-sm text-neutral-500 font-medium">Действия</th>
+              </tr>
+            </thead>
+            <tbody id="partners-table" class="divide-y divide-neutral-100"></tbody>
+          </table>
+        </div>
+      </section>
+
       <!-- Leads Section -->
       <section id="section-leads" class="admin-section hidden">
         <h2 class="text-2xl font-bold text-neutral-800 mb-6">Заявки</h2>
@@ -1589,9 +1861,15 @@ app.get('/admin', async (c) => {
                 <input type="text" name="site_tagline" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
               </div>
               <div>
-                <label class="block text-sm font-medium text-neutral-700 mb-2">URL логотипа</label>
+                <label class="block text-sm font-medium text-neutral-700 mb-2">Логотип сайта</label>
                 <input type="text" name="logo_url" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="https://...">
-                <p class="text-xs text-neutral-500 mt-1">Вставьте URL изображения логотипа</p>
+                <div class="mt-2 flex items-center gap-4">
+                  <input type="file" accept="image/*" onchange="uploadSettingsImage(this, 'logo_url')" class="text-sm text-neutral-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100">
+                  <span class="text-xs text-neutral-500">или вставьте URL</span>
+                </div>
+                <div id="logo_url_preview" class="mt-2 hidden">
+                  <img src="" alt="Logo Preview" class="h-12 w-auto">
+                </div>
               </div>
               <div>
                 <label class="block text-sm font-medium text-neutral-700 mb-2">Favicon URL</label>
@@ -1652,8 +1930,15 @@ app.get('/admin', async (c) => {
                 <textarea name="hero_description" rows="3" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="Собственное производство во Владимире..."></textarea>
               </div>
               <div>
-                <label class="block text-sm font-medium text-neutral-700 mb-2">Фоновое изображение (URL)</label>
+                <label class="block text-sm font-medium text-neutral-700 mb-2">Фоновое изображение Hero-секции</label>
                 <input type="text" name="hero_bg_image" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="https://...">
+                <div class="mt-2 flex items-center gap-4">
+                  <input type="file" accept="image/*" onchange="uploadSettingsImage(this, 'hero_bg_image')" class="text-sm text-neutral-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100">
+                  <span class="text-xs text-neutral-500">или вставьте URL</span>
+                </div>
+                <div id="hero_bg_image_preview" class="mt-2 hidden">
+                  <img src="" alt="Preview" class="w-full max-w-md h-32 object-cover rounded-lg">
+                </div>
               </div>
               <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
@@ -1682,15 +1967,22 @@ app.get('/admin', async (c) => {
             <div class="space-y-6">
               <div>
                 <label class="block text-sm font-medium text-neutral-700 mb-2">Заголовок страницы</label>
-                <input type="text" name="about_title" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="О компании Armata-Rampa">
+                <input type="text" name="about_title" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="О компании USSIL">
               </div>
               <div>
                 <label class="block text-sm font-medium text-neutral-700 mb-2">Основной текст</label>
                 <textarea name="about_content" rows="6" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="Описание компании..."></textarea>
               </div>
               <div>
-                <label class="block text-sm font-medium text-neutral-700 mb-2">Изображение компании (URL)</label>
+                <label class="block text-sm font-medium text-neutral-700 mb-2">Изображение компании</label>
                 <input type="text" name="about_image" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="https://...">
+                <div class="mt-2 flex items-center gap-4">
+                  <input type="file" accept="image/*" onchange="uploadSettingsImage(this, 'about_image')" class="text-sm text-neutral-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100">
+                  <span class="text-xs text-neutral-500">или вставьте URL</span>
+                </div>
+                <div id="about_image_preview" class="mt-2 hidden">
+                  <img src="" alt="Preview" class="w-48 h-32 object-cover rounded-lg">
+                </div>
               </div>
               <div class="grid grid-cols-2 gap-4">
                 <div>
@@ -1734,7 +2026,7 @@ app.get('/admin', async (c) => {
             <div class="space-y-6">
               <div>
                 <label class="block text-sm font-medium text-neutral-700 mb-2">Meta Title (главная)</label>
-                <input type="text" name="seo_title" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="Погрузочные рампы и эстакады от производителя | Armata-Rampa">
+                <input type="text" name="seo_title" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="Погрузочные рампы и эстакады от производителя | USSIL">
               </div>
               <div>
                 <label class="block text-sm font-medium text-neutral-700 mb-2">Meta Description (главная)</label>
@@ -1776,7 +2068,7 @@ app.get('/admin', async (c) => {
               </div>
               <div>
                 <label class="block text-sm font-medium text-neutral-700 mb-2">Тема письма</label>
-                <input type="text" name="email_subject_template" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="Новая заявка с сайта Armata-Rampa">
+                <input type="text" name="email_subject_template" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="Новая заявка с сайта USSIL">
               </div>
             </div>
           </div>
@@ -1849,9 +2141,12 @@ app.get('/admin', async (c) => {
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-neutral-700 mb-2">Главное изображение (URL)</label>
-          <input type="text" name="main_image" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="https://images.unsplash.com/...">
-          <p class="text-xs text-neutral-500 mt-1">Вставьте URL изображения или загрузите на хостинг изображений</p>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">Главное изображение</label>
+          <input type="text" name="main_image" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="https://...">
+          <div class="mt-2 flex items-center gap-4">
+            <input type="file" accept="image/*" onchange="uploadImage(this, 'productForm', 'main_image')" class="text-sm text-neutral-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100">
+            <span class="text-xs text-neutral-500">или вставьте URL</span>
+          </div>
           <div id="mainImagePreview" class="mt-2 hidden">
             <img src="" alt="Preview" class="image-preview">
           </div>
@@ -1951,6 +2246,105 @@ app.get('/admin', async (c) => {
         <div class="flex gap-4 pt-4">
           <button type="submit" class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl">Сохранить</button>
           <button type="button" onclick="closeCategoryModal()" class="px-6 py-3 border border-neutral-200 text-neutral-600 rounded-xl hover:bg-neutral-50">Отмена</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Case Modal -->
+  <div id="caseModal" class="modal fixed inset-0 bg-black/50 z-50 items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="p-6 border-b border-neutral-100 flex justify-between items-center sticky top-0 bg-white">
+        <h3 id="caseModalTitle" class="text-xl font-bold text-neutral-800">Добавить кейс</h3>
+        <button onclick="closeCaseModal()" class="w-10 h-10 rounded-xl hover:bg-neutral-100"><i class="fas fa-times text-neutral-500"></i></button>
+      </div>
+      <form id="caseForm" class="p-6 space-y-4">
+        <input type="hidden" name="id" id="caseId">
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">Название проекта *</label>
+          <input type="text" name="title" required class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">Описание</label>
+          <textarea name="description" rows="3" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-neutral-700 mb-2">Клиент</label>
+            <input type="text" name="client_name" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-700 mb-2">Локация</label>
+            <input type="text" name="location" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">Результат</label>
+          <textarea name="result_text" rows="2" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">Главное изображение (URL)</label>
+          <input type="text" name="main_image" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500" placeholder="https://...">
+          <p class="text-xs text-neutral-500 mt-1">Вставьте URL или загрузите изображение</p>
+          <input type="file" accept="image/*" onchange="uploadImage(this, 'caseForm', 'main_image')" class="mt-2 text-sm">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-neutral-700 mb-2">Порядок</label>
+            <input type="number" name="sort_order" class="w-full px-4 py-3 rounded-xl border border-neutral-200" value="0">
+          </div>
+          <label class="flex items-center gap-3 self-end pb-3">
+            <input type="checkbox" name="is_active" class="w-5 h-5 rounded border-neutral-300 text-blue-600" checked>
+            <span class="text-sm font-medium text-neutral-700">Активен</span>
+          </label>
+        </div>
+        <div class="flex gap-4 pt-4">
+          <button type="submit" class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl">Сохранить</button>
+          <button type="button" onclick="closeCaseModal()" class="px-6 py-3 border border-neutral-200 text-neutral-600 rounded-xl hover:bg-neutral-50">Отмена</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Partner Modal -->
+  <div id="partnerModal" class="modal fixed inset-0 bg-black/50 z-50 items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full">
+      <div class="p-6 border-b border-neutral-100 flex justify-between items-center">
+        <h3 id="partnerModalTitle" class="text-xl font-bold text-neutral-800">Добавить партнёра</h3>
+        <button onclick="closePartnerModal()" class="w-10 h-10 rounded-xl hover:bg-neutral-100"><i class="fas fa-times text-neutral-500"></i></button>
+      </div>
+      <form id="partnerForm" class="p-6 space-y-4">
+        <input type="hidden" name="id" id="partnerId">
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">Название компании *</label>
+          <input type="text" name="name" required class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">URL логотипа</label>
+          <input type="text" name="logo_url" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500" placeholder="https://...">
+          <input type="file" accept="image/*" onchange="uploadImage(this, 'partnerForm', 'logo_url')" class="mt-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">Сайт</label>
+          <input type="url" name="website_url" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500" placeholder="https://company.ru">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">Описание</label>
+          <textarea name="description" rows="2" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-neutral-700 mb-2">Порядок</label>
+            <input type="number" name="sort_order" class="w-full px-4 py-3 rounded-xl border border-neutral-200" value="0">
+          </div>
+          <label class="flex items-center gap-3 self-end pb-3">
+            <input type="checkbox" name="is_active" class="w-5 h-5 rounded border-neutral-300 text-blue-600" checked>
+            <span class="text-sm font-medium text-neutral-700">Активен</span>
+          </label>
+        </div>
+        <div class="flex gap-4 pt-4">
+          <button type="submit" class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl">Сохранить</button>
+          <button type="button" onclick="closePartnerModal()" class="px-6 py-3 border border-neutral-200 text-neutral-600 rounded-xl hover:bg-neutral-50">Отмена</button>
         </div>
       </form>
     </div>
@@ -2342,11 +2736,292 @@ app.get('/admin', async (c) => {
       }
     });
 
+    // ===== Cases CRUD =====
+    async function loadCases() {
+      const response = await fetch('/api/admin/cases');
+      const data = await response.json();
+      
+      document.getElementById('cases-table').innerHTML = (data.data || []).map(item => 
+        '<tr class="hover:bg-neutral-50">' +
+          '<td class="px-6 py-4"><img src="' + (item.main_image || 'https://via.placeholder.com/60x60?text=No+image') + '" class="w-14 h-14 object-cover rounded-lg"></td>' +
+          '<td class="px-6 py-4"><div class="font-medium text-neutral-800">' + item.title + '</div></td>' +
+          '<td class="px-6 py-4 text-neutral-600">' + (item.client_name || '-') + '</td>' +
+          '<td class="px-6 py-4 text-neutral-500">' + (item.location || '-') + '</td>' +
+          '<td class="px-6 py-4"><span class="px-3 py-1 rounded-full text-xs font-medium ' + (item.is_active ? 'bg-green-100 text-green-600' : 'bg-neutral-100 text-neutral-500') + '">' + (item.is_active ? 'Активен' : 'Скрыт') + '</span></td>' +
+          '<td class="px-6 py-4"><div class="flex gap-2">' +
+            '<button onclick="editCase(' + item.id + ')" class="w-9 h-9 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600"><i class="fas fa-edit"></i></button>' +
+            '<button onclick="deleteCase(' + item.id + ')" class="w-9 h-9 rounded-lg bg-red-50 hover:bg-red-100 text-red-600"><i class="fas fa-trash"></i></button>' +
+          '</div></td></tr>'
+      ).join('') || '<tr><td colspan="6" class="px-6 py-8 text-center text-neutral-500">Кейсов нет</td></tr>';
+    }
+
+    function openCaseModal(caseItem = null) {
+      const modal = document.getElementById('caseModal');
+      const form = document.getElementById('caseForm');
+      const title = document.getElementById('caseModalTitle');
+      
+      form.reset();
+      document.getElementById('caseId').value = '';
+      
+      if (caseItem) {
+        title.textContent = 'Редактировать кейс';
+        document.getElementById('caseId').value = caseItem.id;
+        form.title.value = caseItem.title || '';
+        form.description.value = caseItem.description || '';
+        form.client_name.value = caseItem.client_name || '';
+        form.location.value = caseItem.location || '';
+        form.result_text.value = caseItem.result_text || '';
+        form.main_image.value = caseItem.main_image || '';
+        form.sort_order.value = caseItem.sort_order || 0;
+        form.is_active.checked = !!caseItem.is_active;
+      } else {
+        title.textContent = 'Добавить кейс';
+        form.is_active.checked = true;
+      }
+      
+      modal.classList.add('active');
+    }
+
+    function closeCaseModal() {
+      document.getElementById('caseModal').classList.remove('active');
+    }
+
+    async function editCase(id) {
+      const response = await fetch('/api/admin/cases');
+      const data = await response.json();
+      const item = data.data.find(c => c.id === id);
+      if (item) openCaseModal(item);
+    }
+
+    async function deleteCase(id) {
+      if (!confirm('Удалить этот кейс?')) return;
+      await fetch('/api/admin/cases/' + id, { method: 'DELETE' });
+      loadCases();
+    }
+
+    document.getElementById('caseForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const id = document.getElementById('caseId').value;
+      
+      const data = {
+        title: form.title.value,
+        description: form.description.value,
+        client_name: form.client_name.value,
+        location: form.location.value,
+        result_text: form.result_text.value,
+        main_image: form.main_image.value,
+        sort_order: parseInt(form.sort_order.value) || 0,
+        is_active: form.is_active.checked
+      };
+      
+      const url = id ? '/api/admin/cases/' + id : '/api/admin/cases';
+      const method = id ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      if (response.ok) {
+        closeCaseModal();
+        loadCases();
+        alert(id ? 'Кейс обновлен!' : 'Кейс добавлен!');
+      } else {
+        const err = await response.json();
+        alert('Ошибка: ' + (err.error || 'Неизвестная ошибка'));
+      }
+    });
+
+    // ===== Partners CRUD =====
+    async function loadPartners() {
+      const response = await fetch('/api/admin/partners');
+      const data = await response.json();
+      
+      document.getElementById('partners-table').innerHTML = (data.data || []).map(item => 
+        '<tr class="hover:bg-neutral-50">' +
+          '<td class="px-6 py-4">' + (item.logo_url ? '<img src="' + item.logo_url + '" class="h-10 w-auto object-contain">' : '<span class="text-neutral-400">-</span>') + '</td>' +
+          '<td class="px-6 py-4 font-medium text-neutral-800">' + item.name + '</td>' +
+          '<td class="px-6 py-4">' + (item.website_url ? '<a href="' + item.website_url + '" target="_blank" class="text-blue-600 hover:underline">' + item.website_url + '</a>' : '-') + '</td>' +
+          '<td class="px-6 py-4">' + (item.sort_order || 0) + '</td>' +
+          '<td class="px-6 py-4"><span class="px-3 py-1 rounded-full text-xs font-medium ' + (item.is_active ? 'bg-green-100 text-green-600' : 'bg-neutral-100 text-neutral-500') + '">' + (item.is_active ? 'Активен' : 'Скрыт') + '</span></td>' +
+          '<td class="px-6 py-4"><div class="flex gap-2">' +
+            '<button onclick="editPartner(' + item.id + ')" class="w-9 h-9 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600"><i class="fas fa-edit"></i></button>' +
+            '<button onclick="deletePartner(' + item.id + ')" class="w-9 h-9 rounded-lg bg-red-50 hover:bg-red-100 text-red-600"><i class="fas fa-trash"></i></button>' +
+          '</div></td></tr>'
+      ).join('') || '<tr><td colspan="6" class="px-6 py-8 text-center text-neutral-500">Партнёров нет</td></tr>';
+    }
+
+    function openPartnerModal(partner = null) {
+      const modal = document.getElementById('partnerModal');
+      const form = document.getElementById('partnerForm');
+      const title = document.getElementById('partnerModalTitle');
+      
+      form.reset();
+      document.getElementById('partnerId').value = '';
+      
+      if (partner) {
+        title.textContent = 'Редактировать партнёра';
+        document.getElementById('partnerId').value = partner.id;
+        form.name.value = partner.name || '';
+        form.logo_url.value = partner.logo_url || '';
+        form.website_url.value = partner.website_url || '';
+        form.description.value = partner.description || '';
+        form.sort_order.value = partner.sort_order || 0;
+        form.is_active.checked = !!partner.is_active;
+      } else {
+        title.textContent = 'Добавить партнёра';
+        form.is_active.checked = true;
+      }
+      
+      modal.classList.add('active');
+    }
+
+    function closePartnerModal() {
+      document.getElementById('partnerModal').classList.remove('active');
+    }
+
+    async function editPartner(id) {
+      const response = await fetch('/api/admin/partners');
+      const data = await response.json();
+      const item = data.data.find(p => p.id === id);
+      if (item) openPartnerModal(item);
+    }
+
+    async function deletePartner(id) {
+      if (!confirm('Удалить этого партнёра?')) return;
+      await fetch('/api/admin/partners/' + id, { method: 'DELETE' });
+      loadPartners();
+    }
+
+    document.getElementById('partnerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const id = document.getElementById('partnerId').value;
+      
+      const data = {
+        name: form.name.value,
+        logo_url: form.logo_url.value,
+        website_url: form.website_url.value,
+        description: form.description.value,
+        sort_order: parseInt(form.sort_order.value) || 0,
+        is_active: form.is_active.checked
+      };
+      
+      const url = id ? '/api/admin/partners/' + id : '/api/admin/partners';
+      const method = id ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      if (response.ok) {
+        closePartnerModal();
+        loadPartners();
+        alert(id ? 'Партнёр обновлен!' : 'Партнёр добавлен!');
+      } else {
+        const err = await response.json();
+        alert('Ошибка: ' + (err.error || 'Неизвестная ошибка'));
+      }
+    });
+
+    // ===== Image Upload =====
+    async function uploadImage(input, formId, fieldName) {
+      const file = input.files[0];
+      if (!file) return;
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      try {
+        const response = await fetch('/api/admin/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await response.json();
+        if (data.success && data.url) {
+          document.querySelector('#' + formId + ' [name="' + fieldName + '"]').value = data.url;
+          // Update preview if exists
+          const previewEl = document.getElementById(fieldName === 'main_image' ? 'mainImagePreview' : fieldName + '_preview');
+          if (previewEl) {
+            const img = previewEl.querySelector('img');
+            if (img) img.src = data.url;
+            previewEl.classList.remove('hidden');
+          }
+          alert('Изображение загружено!');
+        } else {
+          alert('Ошибка загрузки: ' + (data.error || 'Неизвестная ошибка'));
+        }
+      } catch (e) {
+        alert('Ошибка загрузки изображения');
+      }
+    }
+
+    // Settings image upload
+    async function uploadSettingsImage(input, fieldName) {
+      const file = input.files[0];
+      if (!file) return;
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      try {
+        const response = await fetch('/api/admin/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await response.json();
+        if (data.success && data.url) {
+          document.querySelector('[name="' + fieldName + '"]').value = data.url;
+          // Update preview
+          const previewEl = document.getElementById(fieldName + '_preview');
+          if (previewEl) {
+            const img = previewEl.querySelector('img');
+            if (img) img.src = data.url;
+            previewEl.classList.remove('hidden');
+          }
+          alert('Изображение загружено!');
+        } else {
+          alert('Ошибка загрузки: ' + (data.error || 'Неизвестная ошибка'));
+        }
+      } catch (e) {
+        alert('Ошибка загрузки изображения');
+      }
+    }
+
     // Init
     loadDashboard();
     loadProducts();
     loadLeads();
     loadSettings();
+    
+    // Load cases and partners when those sections are shown
+    const origShowSection = showSection;
+    showSection = function(section) {
+      if (section === 'cases') loadCases();
+      if (section === 'partners') loadPartners();
+      if (section === 'categories') loadCategories();
+      
+      document.querySelectorAll('.admin-section').forEach(el => el.classList.add('hidden'));
+      document.getElementById('section-' + section).classList.remove('hidden');
+      
+      document.querySelectorAll('.nav-link').forEach(a => {
+        a.classList.remove('bg-blue-50', 'text-blue-600', 'font-medium');
+        a.classList.add('text-neutral-600');
+      });
+      if (event && event.target) {
+        const link = event.target.closest('a');
+        if (link) {
+          link.classList.add('bg-blue-50', 'text-blue-600', 'font-medium');
+          link.classList.remove('text-neutral-600');
+        }
+      }
+    };
   </script>
 </body>
 </html>`)
