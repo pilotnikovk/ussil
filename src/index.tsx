@@ -719,6 +719,7 @@ const renderPage = (title: string, content: string, seoTitle?: string, seoDescri
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${seoTitle || title} | ${siteName}</title>
   <meta name="description" content="${seoDescription || 'Производитель погрузочных рамп и эстакад. Собственное производство, гарантия качества, доставка по России.'}">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1640,6 +1641,7 @@ app.get('/admin/login', async (c) => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Вход | Админ-панель</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" rel="stylesheet">
@@ -1648,7 +1650,7 @@ app.get('/admin/login', async (c) => {
   <div class="w-full max-w-md">
     <div class="text-center mb-8">
       <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center mb-4 shadow-lg">
-        <span class="text-3xl font-bold text-white">A</span>
+        <span class="text-3xl font-bold text-white">U</span>
       </div>
       <h1 class="text-2xl font-bold text-neutral-800">USSIL</h1>
       <p class="text-neutral-500">Вход в админ-панель</p>
@@ -1704,16 +1706,21 @@ app.get('/admin/login', async (c) => {
       errorEl.classList.add('hidden');
       
       try {
+        const payload = {
+          username: formData.get('username'),
+          password: formData.get('password')
+        };
+        console.log('Sending login request:', payload.username);
+        
         const response = await fetch('/api/admin/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            username: formData.get('username'),
-            password: formData.get('password')
-          })
+          body: JSON.stringify(payload)
         });
         
+        console.log('Response status:', response.status);
         const data = await response.json();
+        console.log('Response data:', data);
         
         if (data.success) {
           localStorage.setItem('adminToken', data.token);
@@ -1724,7 +1731,8 @@ app.get('/admin/login', async (c) => {
           errorEl.classList.remove('hidden');
         }
       } catch (err) {
-        errorEl.textContent = 'Ошибка сети';
+        console.error('Login error:', err);
+        errorEl.textContent = 'Ошибка сети: ' + err.message;
         errorEl.classList.remove('hidden');
       } finally {
         submitBtn.disabled = false;
@@ -1753,6 +1761,7 @@ app.get('/admin', async (c) => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Админ-панель | USSIL CMS</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" rel="stylesheet">
