@@ -828,11 +828,24 @@ app.get('/', async (c) => {
           <a href="#contact-form" class="hidden sm:inline-flex px-6 py-3 bg-accent-500 hover:bg-accent-600 text-white font-semibold rounded-xl shadow-lg shadow-accent-500/30 transition-all">
             Оставить заявку
           </a>
-          <button id="mobileMenuBtn" class="lg:hidden w-12 h-12 rounded-xl bg-neutral-100 flex items-center justify-center">
+          <button onclick="toggleMobileMenu()" class="lg:hidden w-12 h-12 rounded-xl bg-neutral-100 flex items-center justify-center">
             <i class="fas fa-bars text-neutral-600"></i>
           </button>
         </div>
       </nav>
+      <!-- Mobile Menu -->
+      <div id="mobileMenu" class="hidden lg:hidden border-t border-neutral-100 bg-white">
+        <div class="px-6 py-4 space-y-2">
+          <a href="/katalog" class="block px-4 py-3 rounded-lg text-neutral-600 hover:bg-neutral-50 font-medium">Каталог</a>
+          <a href="/o-kompanii" class="block px-4 py-3 rounded-lg text-neutral-600 hover:bg-neutral-50 font-medium">О компании</a>
+          <a href="/kejsy" class="block px-4 py-3 rounded-lg text-neutral-600 hover:bg-neutral-50 font-medium">Кейсы</a>
+          <a href="/dostavka" class="block px-4 py-3 rounded-lg text-neutral-600 hover:bg-neutral-50 font-medium">Доставка</a>
+          <a href="/kontakty" class="block px-4 py-3 rounded-lg text-neutral-600 hover:bg-neutral-50 font-medium">Контакты</a>
+          <a href="#contact-form" class="block px-4 py-3 rounded-lg bg-accent-500 text-white text-center font-semibold mt-4">
+            <i class="fas fa-paper-plane mr-2"></i>Оставить заявку
+          </a>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -1129,6 +1142,13 @@ app.get('/', async (c) => {
       </div>
     </div>
   </footer>
+  
+  <script>
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobileMenu');
+      menu.classList.toggle('hidden');
+    }
+  </script>
   `
   
   return c.html(renderPage('Главная', content, siteName + ' — Погрузочные рампы и эстакады от производителя', 
@@ -1137,39 +1157,62 @@ app.get('/', async (c) => {
 
 // Catalog page
 app.get('/katalog', async (c) => {
+  const settings = c.get('settings')
+  const logoUrl = settings.logo_url || 'https://www.genspark.ai/api/files/s/eBVbsOpD'
+  
   const content = `
   <header class="bg-white shadow-sm sticky top-0 z-50">
     <div class="max-w-7xl mx-auto">
       <nav class="flex items-center justify-between px-6 py-4">
         <a href="/" class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-primary-500 flex items-center justify-center">
-            <span class="text-white font-bold">A</span>
-          </div>
+          <img src="${logoUrl}" alt="USSIL" class="h-8 w-auto">
           <span class="text-lg font-bold text-neutral-800">USSIL</span>
         </a>
         <div class="hidden lg:flex items-center gap-1">
           <a href="/katalog" class="px-4 py-2 rounded-lg text-primary-600 bg-primary-50 font-medium">Каталог</a>
           <a href="/o-kompanii" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">О компании</a>
+          <a href="/kejsy" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Кейсы</a>
           <a href="/dostavka" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Доставка</a>
           <a href="/kontakty" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Контакты</a>
         </div>
-        <a href="tel:+74955553535" class="hidden md:flex items-center gap-2 text-primary-600 font-semibold">
-          <i class="fas fa-phone"></i> +7 (495) 555-35-35
-        </a>
+        <div class="flex items-center gap-4">
+          <a href="tel:${(settings.phone_main || '+74955553535').replace(/[^+\\d]/g, '')}" class="hidden md:flex items-center gap-2 text-primary-600 font-semibold">
+            <i class="fas fa-phone"></i> ${settings.phone_main || '+7 (495) 555-35-35'}
+          </a>
+          <button onclick="toggleMobileMenu()" class="lg:hidden w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center">
+            <i class="fas fa-bars text-neutral-600"></i>
+          </button>
+        </div>
       </nav>
+      <!-- Mobile Menu -->
+      <div id="mobileMenu" class="hidden lg:hidden border-t border-neutral-100 bg-white">
+        <div class="px-6 py-4 space-y-2">
+          <a href="/katalog" class="block px-4 py-3 rounded-lg bg-primary-50 text-primary-600 font-medium">Каталог</a>
+          <a href="/o-kompanii" class="block px-4 py-3 rounded-lg text-neutral-600 hover:bg-neutral-50 font-medium">О компании</a>
+          <a href="/kejsy" class="block px-4 py-3 rounded-lg text-neutral-600 hover:bg-neutral-50 font-medium">Кейсы</a>
+          <a href="/dostavka" class="block px-4 py-3 rounded-lg text-neutral-600 hover:bg-neutral-50 font-medium">Доставка</a>
+          <a href="/kontakty" class="block px-4 py-3 rounded-lg text-neutral-600 hover:bg-neutral-50 font-medium">Контакты</a>
+        </div>
+      </div>
     </div>
   </header>
 
-  <main class="py-12">
-    <div class="max-w-7xl mx-auto px-6">
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-neutral-800 mb-2">Каталог продукции</h1>
+  <main class="py-8 lg:py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="mb-6 lg:mb-8">
+        <h1 class="text-2xl lg:text-3xl font-bold text-neutral-800 mb-2">Каталог продукции</h1>
         <p class="text-neutral-600">Погрузочные рампы и эстакады от производителя</p>
       </div>
       
-      <div class="grid lg:grid-cols-4 gap-8">
-        <aside class="lg:col-span-1">
-          <div class="bg-white rounded-2xl p-6 shadow-sm sticky top-24">
+      <!-- Mobile categories filter button -->
+      <button onclick="toggleCategoriesFilter()" class="lg:hidden w-full mb-4 px-4 py-3 bg-white rounded-xl shadow-sm border border-neutral-200 flex items-center justify-between">
+        <span class="font-medium text-neutral-700"><i class="fas fa-filter mr-2"></i>Фильтр по категориям</span>
+        <i class="fas fa-chevron-down text-neutral-400"></i>
+      </button>
+      
+      <div class="flex flex-col lg:flex-row gap-6 lg:gap-8">
+        <aside id="categoriesAside" class="hidden lg:block lg:w-64 flex-shrink-0">
+          <div class="bg-white rounded-2xl p-6 shadow-sm lg:sticky lg:top-24">
             <h3 class="font-semibold text-neutral-800 mb-4">Категории</h3>
             <div id="filter-categories" class="space-y-2">
               <!-- Categories loaded via JS -->
@@ -1177,8 +1220,8 @@ app.get('/katalog', async (c) => {
           </div>
         </aside>
         
-        <div class="lg:col-span-3">
-          <div id="product-grid" class="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div class="flex-1">
+          <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
             <!-- Products loaded via JS -->
           </div>
         </div>
@@ -1188,37 +1231,72 @@ app.get('/katalog', async (c) => {
 
   <footer class="bg-neutral-800 text-white py-8 mt-12">
     <div class="max-w-7xl mx-auto px-6 text-center text-neutral-400 text-sm">
-      &copy; 2024 USSIL. Все права защищены.
+      &copy; ${new Date().getFullYear()} USSIL. Все права защищены.
     </div>
   </footer>
+  
+  <script>
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobileMenu');
+      menu.classList.toggle('hidden');
+    }
+    function toggleCategoriesFilter() {
+      const aside = document.getElementById('categoriesAside');
+      aside.classList.toggle('hidden');
+      aside.classList.toggle('mb-4');
+    }
+  </script>
   `
   
   return c.html(renderPage('Каталог продукции', content, 'Каталог рамп и эстакад | USSIL', 
-    'Каталог погрузочных рамп и эстакад от производителя. Мобильные, гидравлические рампы, эстакады. Цены, характеристики.'))
+    'Каталог погрузочных рамп и эстакад от производителя. Мобильные, гидравлические рампы, эстакады. Цены, характеристики.', settings))
 })
 
 // Product page
 app.get('/product/:slug', async (c) => {
   const slug = c.req.param('slug')
+  const settings = c.get('settings')
+  const logoUrl = settings.logo_url || 'https://www.genspark.ai/api/files/s/eBVbsOpD'
+  const phoneMain = settings.phone_main || '+7 (495) 555-35-35'
+  const phoneClean = phoneMain.replace(/[^+\d]/g, '')
   
   const content = `
   <header class="bg-white shadow-sm sticky top-0 z-50">
     <div class="max-w-7xl mx-auto">
-      <nav class="flex items-center justify-between px-6 py-4">
-        <a href="/" class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-primary-500 flex items-center justify-center">
-            <span class="text-white font-bold">A</span>
-          </div>
+      <nav class="flex items-center justify-between px-4 sm:px-6 py-4">
+        <a href="/" class="flex items-center gap-2 sm:gap-3">
+          <img src="${logoUrl}" alt="USSIL" class="h-8 w-auto">
           <span class="text-lg font-bold text-neutral-800">USSIL</span>
         </a>
         <div class="hidden lg:flex items-center gap-1">
-          <a href="/katalog" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Каталог</a>
+          <a href="/katalog" class="px-4 py-2 rounded-lg text-primary-600 bg-primary-50 font-medium">Каталог</a>
+          <a href="/o-kompanii" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">О компании</a>
+          <a href="/kejsy" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Кейсы</a>
+          <a href="/dostavka" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Доставка</a>
           <a href="/kontakty" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Контакты</a>
         </div>
-        <a href="tel:+74955553535" class="hidden md:flex items-center gap-2 text-primary-600 font-semibold">
-          <i class="fas fa-phone"></i> +7 (495) 555-35-35
-        </a>
+        <div class="flex items-center gap-2 sm:gap-4">
+          <a href="tel:${phoneClean}" class="hidden md:flex items-center gap-2 text-primary-600 font-semibold text-sm">
+            <i class="fas fa-phone"></i> ${phoneMain}
+          </a>
+          <button onclick="toggleMobileMenu()" class="lg:hidden w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center">
+            <i class="fas fa-bars text-neutral-600"></i>
+          </button>
+        </div>
       </nav>
+      <!-- Mobile Menu -->
+      <div id="mobileMenu" class="hidden lg:hidden border-t border-neutral-100 bg-white">
+        <div class="px-4 sm:px-6 py-4 space-y-2">
+          <a href="/katalog" class="block px-4 py-3 rounded-lg bg-primary-50 text-primary-600 font-medium">Каталог</a>
+          <a href="/o-kompanii" class="block px-4 py-3 rounded-lg text-neutral-600 hover:bg-neutral-50 font-medium">О компании</a>
+          <a href="/kejsy" class="block px-4 py-3 rounded-lg text-neutral-600 hover:bg-neutral-50 font-medium">Кейсы</a>
+          <a href="/dostavka" class="block px-4 py-3 rounded-lg text-neutral-600 hover:bg-neutral-50 font-medium">Доставка</a>
+          <a href="/kontakty" class="block px-4 py-3 rounded-lg text-neutral-600 hover:bg-neutral-50 font-medium">Контакты</a>
+          <a href="tel:${phoneClean}" class="block px-4 py-3 rounded-lg bg-accent-500 text-white text-center font-semibold mt-4">
+            <i class="fas fa-phone mr-2"></i>Позвонить
+          </a>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -1234,62 +1312,114 @@ app.get('/product/:slug', async (c) => {
   </main>
 
   <footer class="bg-neutral-800 text-white py-8 mt-12">
-    <div class="max-w-7xl mx-auto px-6 text-center text-neutral-400 text-sm">
-      &copy; 2024 USSIL. Все права защищены.
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 text-center text-neutral-400 text-sm">
+      &copy; ${new Date().getFullYear()} USSIL. Все права защищены.
     </div>
   </footer>
+  
+  <script>
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobileMenu');
+      menu.classList.toggle('hidden');
+    }
+  </script>
   `
   
-  return c.html(renderPage('Товар', content))
+  return c.html(renderPage('Товар', content, '', '', settings))
 })
 
-// Static pages
-app.get('/o-kompanii', async (c) => {
-  const content = `
+// Helper function for inner page header
+const getInnerPageHeader = (settings: Record<string, string>, activePage: string) => {
+  const logoUrl = settings.logo_url || 'https://www.genspark.ai/api/files/s/eBVbsOpD'
+  const phoneMain = settings.phone_main || '+7 (495) 555-35-35'
+  const phoneClean = phoneMain.replace(/[^+\\d]/g, '')
+  
+  const pages = [
+    { href: '/katalog', name: 'Каталог' },
+    { href: '/o-kompanii', name: 'О компании' },
+    { href: '/kejsy', name: 'Кейсы' },
+    { href: '/dostavka', name: 'Доставка' },
+    { href: '/kontakty', name: 'Контакты' }
+  ]
+  
+  return `
   <header class="bg-white shadow-sm sticky top-0 z-50">
     <div class="max-w-7xl mx-auto">
-      <nav class="flex items-center justify-between px-6 py-4">
-        <a href="/" class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-primary-500 flex items-center justify-center">
-            <span class="text-white font-bold">A</span>
-          </div>
+      <nav class="flex items-center justify-between px-4 sm:px-6 py-4">
+        <a href="/" class="flex items-center gap-2 sm:gap-3">
+          <img src="${logoUrl}" alt="USSIL" class="h-8 w-auto">
           <span class="text-lg font-bold text-neutral-800">USSIL</span>
         </a>
         <div class="hidden lg:flex items-center gap-1">
-          <a href="/katalog" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Каталог</a>
-          <a href="/o-kompanii" class="px-4 py-2 rounded-lg text-primary-600 bg-primary-50 font-medium">О компании</a>
-          <a href="/dostavka" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Доставка</a>
-          <a href="/kontakty" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Контакты</a>
+          ${pages.map(p => `<a href="${p.href}" class="px-4 py-2 rounded-lg ${activePage === p.href ? 'text-primary-600 bg-primary-50' : 'text-neutral-600 hover:text-primary-600 hover:bg-primary-50'} transition-all font-medium">${p.name}</a>`).join('')}
+        </div>
+        <div class="flex items-center gap-2 sm:gap-4">
+          <a href="tel:${phoneClean}" class="hidden md:flex items-center gap-2 text-primary-600 font-semibold text-sm">
+            <i class="fas fa-phone"></i> ${phoneMain}
+          </a>
+          <button onclick="toggleMobileMenu()" class="lg:hidden w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center">
+            <i class="fas fa-bars text-neutral-600"></i>
+          </button>
         </div>
       </nav>
+      <!-- Mobile Menu -->
+      <div id="mobileMenu" class="hidden lg:hidden border-t border-neutral-100 bg-white">
+        <div class="px-4 sm:px-6 py-4 space-y-2">
+          ${pages.map(p => `<a href="${p.href}" class="block px-4 py-3 rounded-lg ${activePage === p.href ? 'bg-primary-50 text-primary-600' : 'text-neutral-600 hover:bg-neutral-50'} font-medium">${p.name}</a>`).join('')}
+          <a href="tel:${phoneClean}" class="block px-4 py-3 rounded-lg bg-accent-500 text-white text-center font-semibold mt-4">
+            <i class="fas fa-phone mr-2"></i>Позвонить
+          </a>
+        </div>
+      </div>
     </div>
-  </header>
+  </header>`
+}
 
-  <main class="py-12">
-    <div class="max-w-4xl mx-auto px-6">
-      <h1 class="text-3xl font-bold text-neutral-800 mb-8">О компании USSIL</h1>
+const getInnerPageFooter = () => `
+  <footer class="bg-neutral-800 text-white py-8 mt-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 text-center text-neutral-400 text-sm">
+      &copy; ${new Date().getFullYear()} USSIL. Все права защищены.
+    </div>
+  </footer>
+  
+  <script>
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobileMenu');
+      menu.classList.toggle('hidden');
+    }
+  </script>`
+
+// Static pages
+app.get('/o-kompanii', async (c) => {
+  const settings = c.get('settings')
+  const content = `
+  ${getInnerPageHeader(settings, '/o-kompanii')}
+
+  <main class="py-8 lg:py-12">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6">
+      <h1 class="text-2xl lg:text-3xl font-bold text-neutral-800 mb-6 lg:mb-8">О компании USSIL</h1>
       
       <div class="prose prose-lg max-w-none">
-        <p class="text-neutral-600 text-lg leading-relaxed mb-6">
+        <p class="text-neutral-600 text-base lg:text-lg leading-relaxed mb-6">
           Компания USSIL — один из ведущих российских производителей погрузочного оборудования. 
           С 2010 года мы разрабатываем и изготавливаем погрузочные рампы и эстакады для складов, 
           логистических центров и производственных предприятий.
         </p>
         
-        <div class="grid md:grid-cols-2 gap-6 my-8">
-          <div class="p-6 bg-primary-50 rounded-2xl">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6 my-6 lg:my-8">
+          <div class="p-5 lg:p-6 bg-primary-50 rounded-2xl">
             <h3 class="font-semibold text-primary-800 mb-2"><i class="fas fa-industry mr-2"></i>Собственное производство</h3>
             <p class="text-primary-700 text-sm">Полный цикл производства на собственных мощностях во Владимире</p>
           </div>
-          <div class="p-6 bg-accent-50 rounded-2xl">
+          <div class="p-5 lg:p-6 bg-accent-50 rounded-2xl">
             <h3 class="font-semibold text-accent-800 mb-2"><i class="fas fa-certificate mr-2"></i>Сертификация</h3>
             <p class="text-accent-700 text-sm">Вся продукция сертифицирована и соответствует ГОСТ</p>
           </div>
-          <div class="p-6 bg-green-50 rounded-2xl">
+          <div class="p-5 lg:p-6 bg-green-50 rounded-2xl">
             <h3 class="font-semibold text-green-800 mb-2"><i class="fas fa-shield-alt mr-2"></i>Гарантия</h3>
             <p class="text-green-700 text-sm">1 год гарантии при соблюдении условий эксплуатации</p>
           </div>
-          <div class="p-6 bg-blue-50 rounded-2xl">
+          <div class="p-5 lg:p-6 bg-blue-50 rounded-2xl">
             <h3 class="font-semibold text-blue-800 mb-2"><i class="fas fa-truck mr-2"></i>Доставка</h3>
             <p class="text-blue-700 text-sm">Доставка по всей России, особые условия для регионов</p>
           </div>
@@ -1303,60 +1433,40 @@ app.get('/o-kompanii', async (c) => {
     </div>
   </main>
 
-  <footer class="bg-neutral-800 text-white py-8 mt-12">
-    <div class="max-w-7xl mx-auto px-6 text-center text-neutral-400 text-sm">
-      &copy; 2024 USSIL. Все права защищены.
-    </div>
-  </footer>
+  ${getInnerPageFooter()}
   `
   
   return c.html(renderPage('О компании', content, 'О компании USSIL — производитель рамп и эстакад', 
-    'USSIL — российский производитель погрузочных рамп и эстакад с 2010 года. Собственное производство, гарантия качества.'))
+    'USSIL — российский производитель погрузочных рамп и эстакад с 2010 года. Собственное производство, гарантия качества.', settings))
 })
 
 app.get('/kontakty', async (c) => {
   const settings = c.get('settings')
   
   const content = `
-  <header class="bg-white shadow-sm sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto">
-      <nav class="flex items-center justify-between px-6 py-4">
-        <a href="/" class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-primary-500 flex items-center justify-center">
-            <span class="text-white font-bold">A</span>
-          </div>
-          <span class="text-lg font-bold text-neutral-800">USSIL</span>
-        </a>
-        <div class="hidden lg:flex items-center gap-1">
-          <a href="/katalog" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Каталог</a>
-          <a href="/o-kompanii" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">О компании</a>
-          <a href="/kontakty" class="px-4 py-2 rounded-lg text-primary-600 bg-primary-50 font-medium">Контакты</a>
-        </div>
-      </nav>
-    </div>
-  </header>
+  ${getInnerPageHeader(settings, '/kontakty')}
 
-  <main class="py-12">
-    <div class="max-w-4xl mx-auto px-6">
-      <h1 class="text-3xl font-bold text-neutral-800 mb-8">Контакты</h1>
+  <main class="py-8 lg:py-12">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6">
+      <h1 class="text-2xl lg:text-3xl font-bold text-neutral-800 mb-6 lg:mb-8">Контакты</h1>
       
-      <div class="grid md:grid-cols-2 gap-8">
-        <div class="space-y-6">
-          <div class="p-6 bg-white rounded-2xl shadow-sm">
-            <div class="flex items-center gap-4 mb-4">
-              <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center">
+      <div class="grid md:grid-cols-2 gap-6 lg:gap-8">
+        <div class="space-y-4 lg:space-y-6">
+          <div class="p-5 lg:p-6 bg-white rounded-2xl shadow-sm">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
                 <i class="fas fa-phone text-xl text-primary-600"></i>
               </div>
               <div>
                 <div class="text-sm text-neutral-500">Телефон</div>
-                <a href="tel:${settings.phone_main || '+74955553535'}" class="text-lg font-semibold text-neutral-800">${settings.phone_main || '+7 (495) 555-35-35'}</a>
+                <a href="tel:${(settings.phone_main || '+74955553535').replace(/[^+\\d]/g, '')}" class="text-lg font-semibold text-neutral-800">${settings.phone_main || '+7 (495) 555-35-35'}</a>
               </div>
             </div>
           </div>
           
-          <div class="p-6 bg-white rounded-2xl shadow-sm">
-            <div class="flex items-center gap-4 mb-4">
-              <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center">
+          <div class="p-5 lg:p-6 bg-white rounded-2xl shadow-sm">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
                 <i class="fas fa-envelope text-xl text-primary-600"></i>
               </div>
               <div>
@@ -1366,32 +1476,32 @@ app.get('/kontakty', async (c) => {
             </div>
           </div>
           
-          <div class="p-6 bg-white rounded-2xl shadow-sm">
-            <div class="flex items-center gap-4 mb-4">
-              <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center">
+          <div class="p-5 lg:p-6 bg-white rounded-2xl shadow-sm">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
                 <i class="fas fa-map-marker-alt text-xl text-primary-600"></i>
               </div>
               <div>
                 <div class="text-sm text-neutral-500">Адрес</div>
-                <div class="text-lg font-semibold text-neutral-800">${settings.address || 'г. Владимир, ул. Промышленная, д. 10'}</div>
+                <div class="text-base lg:text-lg font-semibold text-neutral-800">${settings.address || 'г. Владимир, ул. Промышленная, д. 10'}</div>
               </div>
             </div>
           </div>
           
-          <div class="p-6 bg-white rounded-2xl shadow-sm">
-            <div class="flex items-center gap-4 mb-4">
-              <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center">
+          <div class="p-5 lg:p-6 bg-white rounded-2xl shadow-sm">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
                 <i class="fas fa-clock text-xl text-primary-600"></i>
               </div>
               <div>
                 <div class="text-sm text-neutral-500">Режим работы</div>
-                <div class="text-lg font-semibold text-neutral-800">${settings.working_hours || 'Пн-Пт: 9:00-18:00'}</div>
+                <div class="text-base lg:text-lg font-semibold text-neutral-800">${settings.working_hours || 'Пн-Пт: 9:00-18:00'}</div>
               </div>
             </div>
           </div>
         </div>
         
-        <div class="bg-white rounded-2xl p-8 shadow-sm">
+        <div class="bg-white rounded-2xl p-6 lg:p-8 shadow-sm">
           <h2 class="text-xl font-semibold text-neutral-800 mb-6">Напишите нам</h2>
           <form id="contactForm" class="space-y-4">
             <input type="text" name="name" required placeholder="Ваше имя" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20">
@@ -1406,42 +1516,24 @@ app.get('/kontakty', async (c) => {
     </div>
   </main>
 
-  <footer class="bg-neutral-800 text-white py-8 mt-12">
-    <div class="max-w-7xl mx-auto px-6 text-center text-neutral-400 text-sm">
-      &copy; 2024 USSIL. Все права защищены.
-    </div>
-  </footer>
+  ${getInnerPageFooter()}
   `
   
   return c.html(renderPage('Контакты', content, 'Контакты | USSIL', 
-    'Контакты компании USSIL. Телефон, email, адрес производства.'))
+    'Контакты компании USSIL. Телефон, email, адрес производства.', settings))
 })
 
 app.get('/dostavka', async (c) => {
+  const settings = c.get('settings')
+  
   const content = `
-  <header class="bg-white shadow-sm sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto">
-      <nav class="flex items-center justify-between px-6 py-4">
-        <a href="/" class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-primary-500 flex items-center justify-center">
-            <span class="text-white font-bold">A</span>
-          </div>
-          <span class="text-lg font-bold text-neutral-800">USSIL</span>
-        </a>
-        <div class="hidden lg:flex items-center gap-1">
-          <a href="/katalog" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Каталог</a>
-          <a href="/dostavka" class="px-4 py-2 rounded-lg text-primary-600 bg-primary-50 font-medium">Доставка</a>
-          <a href="/kontakty" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Контакты</a>
-        </div>
-      </nav>
-    </div>
-  </header>
+  ${getInnerPageHeader(settings, '/dostavka')}
 
-  <main class="py-12">
-    <div class="max-w-4xl mx-auto px-6">
-      <h1 class="text-3xl font-bold text-neutral-800 mb-8">Доставка и оплата</h1>
+  <main class="py-8 lg:py-12">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6">
+      <h1 class="text-2xl lg:text-3xl font-bold text-neutral-800 mb-6 lg:mb-8">Доставка и оплата</h1>
       
-      <div class="space-y-8">
+      <div class="space-y-6 lg:space-y-8">
         <div class="bg-white rounded-2xl p-8 shadow-sm">
           <h2 class="text-xl font-semibold text-neutral-800 mb-4"><i class="fas fa-truck text-primary-500 mr-2"></i>Доставка</h2>
           <p class="text-neutral-600 mb-4">Осуществляем доставку по всей России. Особенно выгодные условия для регионов:</p>
@@ -1455,7 +1547,7 @@ app.get('/dostavka', async (c) => {
           </ul>
         </div>
         
-        <div class="bg-white rounded-2xl p-8 shadow-sm">
+        <div class="bg-white rounded-2xl p-6 lg:p-8 shadow-sm">
           <h2 class="text-xl font-semibold text-neutral-800 mb-4"><i class="fas fa-credit-card text-primary-500 mr-2"></i>Оплата</h2>
           <ul class="space-y-2 text-neutral-600">
             <li><i class="fas fa-check text-green-500 mr-2"></i>Безналичный расчет (для юр. лиц)</li>
@@ -1467,15 +1559,77 @@ app.get('/dostavka', async (c) => {
     </div>
   </main>
 
-  <footer class="bg-neutral-800 text-white py-8 mt-12">
-    <div class="max-w-7xl mx-auto px-6 text-center text-neutral-400 text-sm">
-      &copy; 2024 USSIL. Все права защищены.
-    </div>
-  </footer>
+  ${getInnerPageFooter()}
   `
   
   return c.html(renderPage('Доставка и оплата', content, 'Доставка и оплата | USSIL', 
-    'Условия доставки погрузочных рамп и эстакад по России. Оплата с НДС.'))
+    'Условия доставки погрузочных рамп и эстакад по России. Оплата с НДС.', settings))
+})
+
+// Cases page
+app.get('/kejsy', async (c) => {
+  const settings = c.get('settings')
+  
+  // Load cases
+  let cases: any[] = []
+  try {
+    const casesResult = await c.env.DB.prepare('SELECT * FROM cases WHERE is_active = 1 ORDER BY sort_order').all()
+    cases = casesResult.results || []
+  } catch (e) {}
+  
+  const content = `
+  ${getInnerPageHeader(settings, '/kejsy')}
+
+  <main class="py-8 lg:py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="mb-6 lg:mb-8">
+        <h1 class="text-2xl lg:text-4xl font-bold text-neutral-800 mb-2 lg:mb-4">Наши кейсы</h1>
+        <p class="text-neutral-600 text-base lg:text-lg">Реализованные проекты для ведущих компаний России</p>
+      </div>
+      
+      ${cases.length > 0 ? `
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8">
+        ${cases.map((item: any) => `
+        <div class="group bg-white rounded-xl lg:rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-neutral-100">
+          <div class="relative h-40 sm:h-48 lg:h-56 overflow-hidden">
+            <img src="${item.main_image || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&h=400&fit=crop'}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+            ${item.client_name ? `<div class="absolute bottom-3 lg:bottom-4 left-3 lg:left-4 right-3 lg:right-4">
+              <span class="px-2 lg:px-3 py-1 bg-white/90 backdrop-blur text-xs font-medium rounded-full text-neutral-700">${item.client_name}</span>
+            </div>` : ''}
+          </div>
+          <div class="p-4 lg:p-6">
+            <h3 class="text-lg lg:text-xl font-semibold text-neutral-800 mb-2">${item.title}</h3>
+            <p class="text-neutral-600 text-sm lg:text-base mb-3 lg:mb-4 line-clamp-3">${item.description || ''}</p>
+            ${item.result_text ? `<div class="p-3 lg:p-4 bg-green-50 rounded-lg lg:rounded-xl mb-3 lg:mb-4">
+              <div class="text-xs font-medium text-green-700 mb-1">Результат</div>
+              <div class="text-sm text-green-800">${item.result_text}</div>
+            </div>` : ''}
+            <div class="flex items-center justify-between text-xs lg:text-sm text-neutral-500">
+              ${item.location ? `<span><i class="fas fa-map-marker-alt mr-1"></i>${item.location}</span>` : '<span></span>'}
+              ${item.completion_date ? `<span><i class="fas fa-calendar mr-1"></i>${item.completion_date}</span>` : ''}
+            </div>
+          </div>
+        </div>
+        `).join('')}
+      </div>
+      ` : `
+      <div class="text-center py-12 lg:py-16">
+        <div class="w-16 lg:w-20 h-16 lg:h-20 mx-auto bg-neutral-100 rounded-full flex items-center justify-center mb-4 lg:mb-6">
+          <i class="fas fa-briefcase text-2xl lg:text-3xl text-neutral-400"></i>
+        </div>
+        <h3 class="text-lg lg:text-xl font-semibold text-neutral-800 mb-2">Кейсы появятся здесь</h3>
+        <p class="text-neutral-500 text-sm lg:text-base">Скоро мы добавим информацию о реализованных проектах</p>
+      </div>
+      `}
+    </div>
+  </main>
+
+  ${getInnerPageFooter()}
+  `
+  
+  return c.html(renderPage('Кейсы', content, 'Наши кейсы | USSIL', 
+    'Реализованные проекты компании USSIL. Кейсы установки погрузочных рамп и эстакад для крупных компаний России.', settings))
 })
 
 // Admin login page
