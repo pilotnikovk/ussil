@@ -8,6 +8,9 @@ type Bindings = {
   JWT_SECRET: string
   RESEND_API_KEY: string
   ADMIN_EMAIL: string
+  R2_BUCKET: R2Bucket
+  TELEGRAM_BOT_TOKEN: string
+  TELEGRAM_CHAT_ID: string
 }
 
 type Variables = {
@@ -92,6 +95,85 @@ app.use('*', async (c, next) => {
     c.set('settings', {})
   }
   await next()
+})
+
+// ==========================================
+// SITEMAP & ROBOTS
+// ==========================================
+
+// Auto-generated sitemap.xml
+app.get('/sitemap.xml', async (c) => {
+  const settings = c.get('settings')
+  const baseUrl = settings.site_url || 'https://ussil.ru'
+  
+  // Get all products
+  let products: any[] = []
+  try {
+    const result = await c.env.DB.prepare('SELECT slug, updated_at FROM products WHERE is_active = 1').all()
+    products = result.results || []
+  } catch (e) {}
+  
+  // Get all categories
+  let categories: any[] = []
+  try {
+    const result = await c.env.DB.prepare('SELECT slug, updated_at FROM categories WHERE is_active = 1').all()
+    categories = result.results || []
+  } catch (e) {}
+  
+  // Get all pages
+  let pages: any[] = []
+  try {
+    const result = await c.env.DB.prepare('SELECT slug, updated_at FROM pages WHERE is_active = 1').all()
+    pages = result.results || []
+  } catch (e) {}
+  
+  const today = new Date().toISOString().split('T')[0]
+  
+  const staticPages = [
+    { url: '/', priority: '1.0', changefreq: 'daily' },
+    { url: '/katalog', priority: '0.9', changefreq: 'daily' },
+    { url: '/kejsy', priority: '0.8', changefreq: 'weekly' },
+    { url: '/o-kompanii', priority: '0.7', changefreq: 'monthly' },
+    { url: '/dostavka', priority: '0.7', changefreq: 'monthly' },
+    { url: '/kontakty', priority: '0.7', changefreq: 'monthly' }
+  ]
+  
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${staticPages.map(p => `  <url>
+    <loc>${baseUrl}${p.url}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>${p.changefreq}</changefreq>
+    <priority>${p.priority}</priority>
+  </url>`).join('\n')}
+${categories.map((cat: any) => `  <url>
+    <loc>${baseUrl}/katalog?category=${cat.slug}</loc>
+    <lastmod>${cat.updated_at ? cat.updated_at.split('T')[0] : today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`).join('\n')}
+${products.map((prod: any) => `  <url>
+    <loc>${baseUrl}/product/${prod.slug}</loc>
+    <lastmod>${prod.updated_at ? prod.updated_at.split('T')[0] : today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`).join('\n')}
+</urlset>`
+
+  return c.text(xml, 200, { 'Content-Type': 'application/xml' })
+})
+
+// Robots.txt
+app.get('/robots.txt', (c) => {
+  const settings = c.get('settings')
+  const baseUrl = settings.site_url || 'https://ussil.ru'
+  
+  return c.text(`User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/admin
+
+Sitemap: ${baseUrl}/sitemap.xml`, 200, { 'Content-Type': 'text/plain' })
 })
 
 // ==========================================
@@ -222,8 +304,37 @@ app.get('/api/settings', async (c) => {
   }
 })
 
+// Send Telegram notification
+const sendTelegramNotification = async (env: Bindings, lead: any) => {
+  if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) return
+  
+  try {
+    const message = `🔔 *Новая заявка с сайта USSIL*
+
+👤 *Имя:* ${lead.name}
+📞 *Телефон:* ${lead.phone}${lead.email ? `\n📧 *Email:* ${lead.email}` : ''}${lead.company ? `\n🏢 *Компания:* ${lead.company}` : ''}${lead.message ? `\n💬 *Сообщение:* ${lead.message}` : ''}${lead.source ? `\n📍 *Источник:* ${lead.source}` : ''}
+
+⏰ ${new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}`
+
+    await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: env.TELEGRAM_CHAT_ID,
+        text: message,
+        parse_mode: 'Markdown'
+      })
+    })
+  } catch (e) {
+    console.error('Failed to send Telegram notification:', e)
+  }
+}
+
 // Send email notification via Resend API
 const sendEmailNotification = async (env: Bindings, lead: any) => {
+  // Always try to send Telegram notification
+  sendTelegramNotification(env, lead)
+  
   if (!env.RESEND_API_KEY || !env.ADMIN_EMAIL) return
   
   try {
@@ -660,7 +771,7 @@ app.delete('/api/admin/partners/:id', async (c) => {
   }
 })
 
-// Image Upload API (stores URL in database for later use)
+// Image Upload API - uses Cloudflare R2 if available, fallback to base64
 app.post('/api/admin/upload', async (c) => {
   try {
     const formData = await c.req.formData()
@@ -670,27 +781,57 @@ app.post('/api/admin/upload', async (c) => {
       return c.json({ success: false, error: 'No file provided' }, 400)
     }
     
-    // For Cloudflare Pages, we'll use base64 data URL for now
-    // In production, you'd use Cloudflare R2 or similar
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
+    if (!allowedTypes.includes(file.type)) {
+      return c.json({ success: false, error: 'Недопустимый тип файла. Разрешены: JPEG, PNG, GIF, WebP, SVG' }, 400)
+    }
+    
+    // Max 10MB
+    if (file.size > 10 * 1024 * 1024) {
+      return c.json({ success: false, error: 'Файл слишком большой. Максимум 10 МБ' }, 400)
+    }
+    
     const arrayBuffer = await file.arrayBuffer()
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
-    const dataUrl = 'data:' + file.type + ';base64,' + base64
+    const timestamp = Date.now()
+    const ext = file.name.split('.').pop() || 'jpg'
+    const filename = `${timestamp}-${Math.random().toString(36).substring(7)}.${ext}`
+    
+    let imageUrl: string
+    
+    // Try to use R2 if available
+    if (c.env.R2_BUCKET) {
+      try {
+        await c.env.R2_BUCKET.put(`uploads/${filename}`, arrayBuffer, {
+          httpMetadata: {
+            contentType: file.type
+          }
+        })
+        // R2 public URL - configure in Cloudflare Dashboard
+        const settings = c.get('settings')
+        const r2Domain = settings.r2_public_domain || 'https://images.ussil.ru'
+        imageUrl = `${r2Domain}/uploads/${filename}`
+      } catch (r2Error) {
+        console.error('R2 upload failed, falling back to base64:', r2Error)
+        // Fallback to base64
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+        imageUrl = 'data:' + file.type + ';base64,' + base64
+      }
+    } else {
+      // Fallback to base64 data URL
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+      imageUrl = 'data:' + file.type + ';base64,' + base64
+    }
     
     // Store in database
     const result = await c.env.DB.prepare(`
       INSERT INTO uploads (filename, original_name, mime_type, size, url)
       VALUES (?, ?, ?, ?, ?)
-    `).bind(
-      Date.now() + '-' + file.name,
-      file.name,
-      file.type,
-      file.size,
-      dataUrl
-    ).run()
+    `).bind(filename, file.name, file.type, file.size, imageUrl).run()
     
     return c.json({ 
       success: true, 
-      url: dataUrl,
+      url: imageUrl,
       id: result.meta.last_row_id,
       filename: file.name 
     })
@@ -816,7 +957,10 @@ app.get('/', async (c) => {
           <a href="/kontakty" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Контакты</a>
         </div>
         
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2 lg:gap-4">
+          <a href="https://wa.me/${(settings.phone_whatsapp || '+79001234567').replace(/[^0-9]/g, '')}" target="_blank" class="hidden md:flex w-12 h-12 rounded-xl bg-green-500 hover:bg-green-600 items-center justify-center transition-colors" title="Написать в WhatsApp">
+            <i class="fab fa-whatsapp text-white text-xl"></i>
+          </a>
           <a href="tel:${(settings.phone_main || '+78006000093').replace(/[^+\d]/g, '')}" class="hidden md:flex items-center gap-3">
             <div class="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center">
               <i class="fas fa-phone text-primary-600"></i>
@@ -1143,6 +1287,14 @@ app.get('/', async (c) => {
       </div>
     </div>
   </footer>
+  
+  <!-- Floating WhatsApp Button -->
+  <a href="https://wa.me/${(settings.phone_whatsapp || '+79001234567').replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Здравствуйте! Интересует информация о погрузочных рампах.')}" 
+     target="_blank" 
+     class="fixed bottom-6 right-6 z-50 w-16 h-16 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-all"
+     title="Написать в WhatsApp">
+    <i class="fab fa-whatsapp text-white text-3xl"></i>
+  </a>
   
   <script>
     function toggleMobileMenu() {
@@ -2232,6 +2384,22 @@ app.get('/admin', async (c) => {
               <div>
                 <label class="block text-sm font-medium text-neutral-700 mb-2">Тема письма</label>
                 <input type="text" name="email_subject_template" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="Новая заявка с сайта USSIL">
+              </div>
+            </div>
+            
+            <h3 class="text-lg font-semibold text-neutral-800 mt-8 mb-4"><i class="fab fa-telegram text-blue-500 mr-2"></i>Telegram-уведомления</h3>
+            <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+              <p class="text-sm text-green-800"><i class="fas fa-info-circle mr-2"></i>Получайте мгновенные уведомления о заявках в Telegram!</p>
+              <p class="text-xs text-green-700 mt-2">Настройте через Cloudflare: TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID</p>
+            </div>
+            <div class="space-y-4">
+              <div class="p-4 bg-neutral-50 rounded-xl">
+                <p class="text-sm text-neutral-700 mb-2"><strong>Как настроить:</strong></p>
+                <ol class="list-decimal list-inside text-sm text-neutral-600 space-y-1">
+                  <li>Создайте бота через @BotFather и получите токен</li>
+                  <li>Узнайте свой Chat ID через @userinfobot</li>
+                  <li>Добавьте переменные в Cloudflare Pages → Settings → Environment variables</li>
+                </ol>
               </div>
             </div>
           </div>

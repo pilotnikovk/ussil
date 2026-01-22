@@ -14,9 +14,22 @@
     }
   ],
   
+  // R2 Storage для изображений (создайте через: npx wrangler r2 bucket create ussil-images)
+  "r2_buckets": [
+    {
+      "binding": "R2_BUCKET",
+      "bucket_name": "ussil-images"
+    }
+  ],
+  
   // Environment variables (set via .dev.vars for local or wrangler secret for prod)
+  // Для production: npx wrangler pages secret put TELEGRAM_BOT_TOKEN --project-name ussil
   "vars": {
     "JWT_SECRET": "ussil-jwt-secret-2026-change-in-production",
     "ADMIN_EMAIL": "admin@ussil.ru"
   }
+  
+  // Telegram notifications - add these via Cloudflare Dashboard:
+  // TELEGRAM_BOT_TOKEN - from @BotFather
+  // TELEGRAM_CHAT_ID - from @userinfobot
 }
