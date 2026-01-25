@@ -961,13 +961,13 @@ app.get('/', async (c) => {
           <a href="https://wa.me/${(settings.phone_whatsapp || '+79001234567').replace(/[^0-9]/g, '')}" target="_blank" class="hidden md:flex w-12 h-12 rounded-xl bg-green-500 hover:bg-green-600 items-center justify-center transition-colors" title="Написать в WhatsApp">
             <i class="fab fa-whatsapp text-white text-xl"></i>
           </a>
-          <a href="tel:${(settings.phone_main || '+78006000093').replace(/[^+\d]/g, '')}" class="hidden md:flex items-center gap-3">
+          <a href="tel:${(settings.phone_main || '84923225431').replace(/[^+\d]/g, '')}" class="hidden md:flex items-center gap-3">
             <div class="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center">
               <i class="fas fa-phone text-primary-600"></i>
             </div>
             <div>
               <div class="text-xs text-neutral-500">Звоните</div>
-              <div class="font-semibold text-neutral-800">${settings.phone_main || '+7 (800) 600-00-93'}</div>
+              <div class="font-semibold text-neutral-800">${settings.phone_main || '8 (49232) 2-54-31'}</div>
             </div>
           </a>
           <a href="#contact-form" class="hidden sm:inline-flex px-6 py-3 bg-accent-500 hover:bg-accent-600 text-white font-semibold rounded-xl shadow-lg shadow-accent-500/30 transition-all">
@@ -1015,7 +1015,7 @@ app.get('/', async (c) => {
         </h1>
         
         <p class="text-xl text-white/80 mb-8 leading-relaxed">
-          ${settings.hero_description || 'Собственное производство. Гарантия. Доставка по всей России.'}
+          ${settings.hero_description || 'Собственное производство Владимирская область, г. Ковров. Гарантия 24 месяца. Доставка по всей России.'}
         </p>
         
         <div class="flex flex-wrap gap-4">
@@ -1039,7 +1039,7 @@ app.get('/', async (c) => {
             <div class="text-white/70">${settings.hero_stat2_label || 'На рынке'}</div>
           </div>
           <div>
-            <div class="text-3xl font-bold text-white">${settings.guarantee_years || '1'} год</div>
+            <div class="text-3xl font-bold text-white">${settings.guarantee_years || '24'} мес</div>
             <div class="text-white/70">Гарантия</div>
           </div>
           <div>
@@ -1098,7 +1098,7 @@ app.get('/', async (c) => {
             <i class="fas fa-industry text-2xl text-primary-600"></i>
           </div>
           <h3 class="text-lg font-semibold text-neutral-800 mb-2">Собственное производство</h3>
-          <p class="text-neutral-600 text-sm">Контролируем качество на всех этапах изготовления</p>
+          <p class="text-neutral-600 text-sm">Владимирская область, г. Ковров. Контролируем качество на всех этапах</p>
         </div>
         
         <div class="p-8 bg-white rounded-2xl shadow-sm hover:shadow-lg transition-shadow">
@@ -1113,7 +1113,7 @@ app.get('/', async (c) => {
           <div class="w-14 h-14 rounded-xl bg-green-100 flex items-center justify-center mb-4">
             <i class="fas fa-shield-alt text-2xl text-green-600"></i>
           </div>
-          <h3 class="text-lg font-semibold text-neutral-800 mb-2">Гарантия 1 год</h3>
+          <h3 class="text-lg font-semibold text-neutral-800 mb-2">Гарантия 24 месяца</h3>
           <p class="text-neutral-600 text-sm">Гарантийное обслуживание и поставка запчастей</p>
         </div>
         
@@ -1124,6 +1124,20 @@ app.get('/', async (c) => {
           <h3 class="text-lg font-semibold text-neutral-800 mb-2">Доставка по РФ</h3>
           <p class="text-neutral-600 text-sm">Выгодные условия доставки в любой регион России</p>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Reviews Section -->
+  <section class="py-16 lg:py-24 bg-neutral-100">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl lg:text-4xl font-bold text-neutral-800 mb-4">Отзывы клиентов</h2>
+        <p class="text-neutral-600 max-w-2xl mx-auto">Что говорят о нас наши клиенты</p>
+      </div>
+      
+      <div id="reviews-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Reviews loaded via JS -->
       </div>
     </div>
   </section>
@@ -1143,7 +1157,7 @@ app.get('/', async (c) => {
               </div>
               <div>
                 <div class="text-white/60 text-sm">Телефон</div>
-                <a href="tel:${settings.phone_main || '+78006000093'}" class="text-white font-semibold">${settings.phone_main || '+7 (800) 600-00-93'}</a>
+                <a href="tel:${settings.phone_main || '84923225431'}" class="text-white font-semibold">${settings.phone_main || '8 (49232) 2-54-31'}</a>
               </div>
             </div>
             <div class="flex items-center gap-4">
@@ -1220,27 +1234,6 @@ app.get('/', async (c) => {
     </div>
   </section>
 
-  <!-- Partners Section -->
-  <section class="py-16 lg:py-20 bg-neutral-100">
-    <div class="max-w-7xl mx-auto px-6">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl lg:text-4xl font-bold text-neutral-800 mb-4">Наши партнёры</h2>
-        <p class="text-neutral-600">Нам доверяют ведущие компании России</p>
-      </div>
-      
-      <div class="flex flex-wrap items-center justify-center gap-8 lg:gap-16">
-        ${partners.map((partner: any) => `
-        <div class="group">
-          ${partner.logo_url ? 
-            `<img src="${partner.logo_url}" alt="${partner.name}" class="h-12 w-auto grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300">` :
-            `<span class="text-xl font-bold text-neutral-400 group-hover:text-neutral-700 transition-colors">${partner.name}</span>`
-          }
-        </div>
-        `).join('')}
-      </div>
-    </div>
-  </section>
-
   <!-- Footer -->
   <footer class="bg-neutral-800 text-white py-12">
     <div class="max-w-7xl mx-auto px-6">
@@ -1275,9 +1268,11 @@ app.get('/', async (c) => {
         <div>
           <h4 class="font-semibold mb-4">Контакты</h4>
           <ul class="space-y-2 text-neutral-400 text-sm">
-            <li><i class="fas fa-phone mr-2 text-primary-400"></i>${settings.phone_main || '+7 (800) 600-00-93'}</li>
-            <li><i class="fas fa-envelope mr-2 text-primary-400"></i>${settings.email || 'info@ussil.ru'}</li>
-            <li><i class="fas fa-map-marker-alt mr-2 text-primary-400"></i>${settings.address || 'г. Ковров'}</li>
+            <li><i class="fas fa-phone mr-2 text-primary-400"></i><a href="tel:84923225431" class="hover:text-white">8 (49232) 2-54-31</a> <span class="text-neutral-500">(городской)</span></li>
+            <li><i class="fas fa-mobile-alt mr-2 text-primary-400"></i><a href="tel:89209160100" class="hover:text-white">8-920-916-01-00</a> <span class="text-neutral-500">(сотовый)</span></li>
+            <li><i class="fab fa-telegram mr-2 text-primary-400"></i><a href="https://t.me/${settings.telegram || 'max_ussil'}" class="hover:text-white" target="_blank">Telegram</a></li>
+            <li><i class="fas fa-envelope mr-2 text-primary-400"></i><a href="mailto:${settings.email || 'info@ussil.ru'}" class="hover:text-white">${settings.email || 'info@ussil.ru'}</a></li>
+            <li><i class="fas fa-map-marker-alt mr-2 text-primary-400"></i>${settings.address || 'Владимирская обл., г. Ковров, ул. Свердлова, 108А'}</li>
           </ul>
         </div>
       </div>
@@ -1301,11 +1296,91 @@ app.get('/', async (c) => {
       const menu = document.getElementById('mobileMenu');
       menu.classList.toggle('hidden');
     }
+    
+    // Load categories
+    async function loadCategories() {
+      try {
+        const response = await fetch('/api/categories');
+        const data = await response.json();
+        if (data.success && data.data) {
+          const grid = document.getElementById('categories-grid');
+          grid.innerHTML = data.data.map(cat => \`
+            <a href="/katalog/\${cat.slug}" class="group p-8 bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all border border-neutral-100">
+              <div class="w-16 h-16 rounded-2xl bg-primary-100 flex items-center justify-center mb-6 group-hover:bg-primary-500 transition-colors">
+                <i class="fas fa-box text-3xl text-primary-600 group-hover:text-white"></i>
+              </div>
+              <h3 class="text-xl font-semibold text-neutral-800 mb-2 group-hover:text-primary-600">\${cat.name}</h3>
+              <p class="text-neutral-600 text-sm">\${cat.description || ''}</p>
+            </a>
+          \`).join('');
+        }
+      } catch(e) { console.error('Error loading categories', e); }
+    }
+    
+    // Load products
+    async function loadProducts() {
+      try {
+        const response = await fetch('/api/products');
+        const data = await response.json();
+        if (data.success && data.data) {
+          const grid = document.getElementById('featured-products');
+          const products = data.data.slice(0, 6);
+          grid.innerHTML = products.map(p => \`
+            <a href="/product/\${p.slug}" class="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all overflow-hidden">
+              <div class="aspect-video overflow-hidden">
+                <img src="\${p.main_image || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&h=400&fit=crop'}" 
+                     alt="\${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+              </div>
+              <div class="p-6">
+                \${p.is_hit ? '<span class="inline-block px-3 py-1 bg-accent-100 text-accent-700 text-xs font-semibold rounded-full mb-3">Хит продаж</span>' : ''}
+                <h3 class="text-lg font-semibold text-neutral-800 mb-2 group-hover:text-primary-600">\${p.name}</h3>
+                <p class="text-neutral-600 text-sm mb-4">\${p.short_description || ''}</p>
+                <div class="flex items-center justify-between">
+                  <span class="text-2xl font-bold text-primary-600">\${p.price ? p.price.toLocaleString('ru-RU') + ' ₽' : 'По запросу'}</span>
+                  <span class="text-sm text-neutral-400 group-hover:text-primary-600 transition-colors">Подробнее →</span>
+                </div>
+              </div>
+            </a>
+          \`).join('');
+        }
+      } catch(e) { console.error('Error loading products', e); }
+    }
+    
+    // Load reviews
+    async function loadReviews() {
+      try {
+        const response = await fetch('/api/reviews');
+        const data = await response.json();
+        if (data.success && data.data) {
+          const grid = document.getElementById('reviews-grid');
+          const reviews = data.data.slice(0, 6);
+          grid.innerHTML = reviews.map(r => \`
+            <div class="bg-white p-6 rounded-2xl shadow-sm">
+              <div class="flex items-center gap-1 mb-4">
+                \${Array(5).fill().map((_, i) => \`<i class="fas fa-star \${i < r.rating ? 'text-yellow-400' : 'text-neutral-200'}"></i>\`).join('')}
+              </div>
+              <p class="text-neutral-700 mb-4 line-clamp-4">"\${r.review_text}"</p>
+              <div class="border-t border-neutral-100 pt-4">
+                <div class="font-semibold text-neutral-800">\${r.client_name}</div>
+                \${r.client_company ? \`<div class="text-sm text-neutral-500">\${r.client_company}\${r.client_position ? ', ' + r.client_position : ''}</div>\` : ''}
+              </div>
+            </div>
+          \`).join('');
+        }
+      } catch(e) { console.error('Error loading reviews', e); }
+    }
+    
+    // Load on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadCategories();
+      loadProducts();
+      loadReviews();
+    });
   </script>
   `
   
   return c.html(renderPage('Главная', content, siteName + ' — Погрузочные рампы и эстакады от производителя', 
-    'Производитель погрузочных рамп и эстакад. Мобильные рампы от 449 000 ₽, гидравлические рампы от 679 000 ₽. Гарантия 1 год. Доставка по России.', settings))
+    'Производитель погрузочных рамп и эстакад. Собственное производство Владимирская область, г. Ковров. Гарантия 24 месяца. Доставка по России.', settings))
 })
 
 // Catalog page
@@ -1329,8 +1404,8 @@ app.get('/katalog', async (c) => {
           <a href="/kontakty" class="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-primary-50 transition-all font-medium">Контакты</a>
         </div>
         <div class="flex items-center gap-4">
-          <a href="tel:${(settings.phone_main || '+78006000093').replace(/[^+\\d]/g, '')}" class="hidden md:flex items-center gap-2 text-primary-600 font-semibold">
-            <i class="fas fa-phone"></i> ${settings.phone_main || '+7 (800) 600-00-93'}
+          <a href="tel:${(settings.phone_main || '84923225431').replace(/[^+\\d]/g, '')}" class="hidden md:flex items-center gap-2 text-primary-600 font-semibold">
+            <i class="fas fa-phone"></i> ${settings.phone_main || '8 (49232) 2-54-31'}
           </a>
           <button onclick="toggleMobileMenu()" class="lg:hidden w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center">
             <i class="fas fa-bars text-neutral-600"></i>
@@ -1410,7 +1485,7 @@ app.get('/product/:slug', async (c) => {
   const slug = c.req.param('slug')
   const settings = c.get('settings')
   const logoUrl = settings.logo_url || 'https://www.genspark.ai/api/files/s/eBVbsOpD'
-  const phoneMain = settings.phone_main || '+7 (800) 600-00-93'
+  const phoneMain = settings.phone_main || '8 (49232) 2-54-31'
   const phoneClean = phoneMain.replace(/[^+\d]/g, '')
   
   const content = `
@@ -1484,7 +1559,7 @@ app.get('/product/:slug', async (c) => {
 // Helper function for inner page header
 const getInnerPageHeader = (settings: Record<string, string>, activePage: string) => {
   const logoUrl = settings.logo_url || 'https://www.genspark.ai/api/files/s/eBVbsOpD'
-  const phoneMain = settings.phone_main || '+7 (800) 600-00-93'
+  const phoneMain = settings.phone_main || '8 (49232) 2-54-31'
   const phoneClean = phoneMain.replace(/[^+\\d]/g, '')
   
   const pages = [
@@ -1612,7 +1687,7 @@ app.get('/kontakty', async (c) => {
               </div>
               <div>
                 <div class="text-sm text-neutral-500">Телефон</div>
-                <a href="tel:${(settings.phone_main || '+78006000093').replace(/[^+\\d]/g, '')}" class="text-lg font-semibold text-neutral-800">${settings.phone_main || '+7 (800) 600-00-93'}</a>
+                <a href="tel:${(settings.phone_main || '84923225431').replace(/[^+\\d]/g, '')}" class="text-lg font-semibold text-neutral-800">${settings.phone_main || '8 (49232) 2-54-31'}</a>
               </div>
             </div>
           </div>
