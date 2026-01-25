@@ -797,6 +797,18 @@ app.post('/api/admin/upload', async (c) => {
     const ext = file.name.split('.').pop() || 'jpg'
     const filename = `${timestamp}-${Math.random().toString(36).substring(7)}.${ext}`
     
+    // Helper function to convert ArrayBuffer to base64 without stack overflow
+    function arrayBufferToBase64(buffer: ArrayBuffer): string {
+      const bytes = new Uint8Array(buffer)
+      const chunkSize = 8192
+      let binary = ''
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length))
+        binary += String.fromCharCode.apply(null, chunk as any)
+      }
+      return btoa(binary)
+    }
+    
     let imageUrl: string
     
     // Try to use R2 if available and properly configured
@@ -815,19 +827,16 @@ app.post('/api/admin/upload', async (c) => {
           imageUrl = `${r2Domain}/uploads/${filename}`
         } else {
           // No public domain configured, use base64
-          const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
-          imageUrl = 'data:' + file.type + ';base64,' + base64
+          imageUrl = 'data:' + file.type + ';base64,' + arrayBufferToBase64(arrayBuffer)
         }
       } catch (r2Error) {
         console.error('R2 upload failed, falling back to base64:', r2Error)
         // Fallback to base64
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
-        imageUrl = 'data:' + file.type + ';base64,' + base64
+        imageUrl = 'data:' + file.type + ';base64,' + arrayBufferToBase64(arrayBuffer)
       }
     } else {
       // No R2 configured - use base64 data URL
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
-      imageUrl = 'data:' + file.type + ';base64,' + base64
+      imageUrl = 'data:' + file.type + ';base64,' + arrayBufferToBase64(arrayBuffer)
     }
     
     // Store in database
