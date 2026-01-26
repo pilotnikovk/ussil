@@ -983,8 +983,11 @@ app.get('/', async (c) => {
         </div>
         
         <div class="flex items-center gap-2 lg:gap-4">
-          <a href="https://wa.me/${(settings.phone_whatsapp || '+79001234567').replace(/[^0-9]/g, '')}" target="_blank" class="hidden md:flex w-12 h-12 rounded-xl bg-green-500 hover:bg-green-600 items-center justify-center transition-colors" title="Написать в WhatsApp">
+          <a href="https://wa.me/${(settings.phone_whatsapp || '89209160100').replace(/[^0-9]/g, '')}" target="_blank" class="hidden md:flex w-12 h-12 rounded-xl bg-green-500 hover:bg-green-600 items-center justify-center transition-colors" title="Написать в WhatsApp">
             <i class="fab fa-whatsapp text-white text-xl"></i>
+          </a>
+          <a href="https://t.me/${(settings.telegram || 'max_ussil').replace('@', '')}" target="_blank" class="hidden md:flex w-12 h-12 rounded-xl bg-blue-500 hover:bg-blue-600 items-center justify-center transition-colors" title="Написать в Telegram (Макс)">
+            <i class="fab fa-telegram text-white text-xl"></i>
           </a>
           <a href="tel:${(settings.phone_main || '84923225431').replace(/[^+\d]/g, '')}" class="hidden md:flex items-center gap-3">
             <div class="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center">
@@ -1321,13 +1324,21 @@ app.get('/', async (c) => {
   </footer>
   
   ${showWhatsApp ? `
-  <!-- Floating WhatsApp Button -->
-  <a href="https://wa.me/${(settings.phone_whatsapp || '+79001234567').replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Здравствуйте! Интересует информация о погрузочных рампах.')}" 
-     target="_blank" 
-     class="fixed bottom-6 right-6 z-50 w-16 h-16 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-all"
-     title="Написать в WhatsApp">
-    <i class="fab fa-whatsapp text-white text-3xl"></i>
-  </a>
+  <!-- Floating Messenger Buttons -->
+  <div class="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+    <a href="https://t.me/${(settings.telegram || 'max_ussil').replace('@', '')}?text=${encodeURIComponent('Здравствуйте! Интересует информация о погрузочных рампах.')}" 
+       target="_blank" 
+       class="w-14 h-14 bg-blue-500 hover:bg-blue-600 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-all"
+       title="Написать в Telegram (Макс)">
+      <i class="fab fa-telegram text-white text-2xl"></i>
+    </a>
+    <a href="https://wa.me/${(settings.phone_whatsapp || '89209160100').replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Здравствуйте! Интересует информация о погрузочных рампах.')}" 
+       target="_blank" 
+       class="w-14 h-14 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-all"
+       title="Написать в WhatsApp">
+      <i class="fab fa-whatsapp text-white text-2xl"></i>
+    </a>
+  </div>
   ` : ''}
   
   <script>
