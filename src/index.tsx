@@ -1533,6 +1533,95 @@ app.get('/katalog', async (c) => {
     'Каталог погрузочных рамп и эстакад от производителя. Мобильные, гидравлические рампы, эстакады. Цены, характеристики.', settings))
 })
 
+// Category page
+app.get('/katalog/:slug', async (c) => {
+  const slug = c.req.param('slug')
+  const settings = c.get('settings')
+  const logoUrl = settings.logo_url || 'https://www.genspark.ai/api/files/s/eBVbsOpD'
+  
+  // Get category info
+  let category: any = null
+  try {
+    const catResult = await c.env.DB.prepare('SELECT * FROM categories WHERE slug = ?').bind(slug).first()
+    category = catResult
+  } catch (e) {}
+  
+  if (!category) {
+    return c.notFound()
+  }
+  
+  const content = `
+  ${getInnerPageHeader(settings, '/katalog')}
+
+  <main class="py-8 lg:py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="mb-6 lg:mb-8">
+        <nav class="text-sm text-neutral-500 mb-4">
+          <a href="/" class="hover:text-primary-600">Главная</a> / 
+          <a href="/katalog" class="hover:text-primary-600">Каталог</a> / 
+          <span class="text-neutral-800">${category.name}</span>
+        </nav>
+        <h1 class="text-2xl lg:text-3xl font-bold text-neutral-800 mb-2">${category.name}</h1>
+        <p class="text-neutral-600">${category.description || ''}</p>
+      </div>
+      
+      <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <!-- Products loaded via JS -->
+      </div>
+    </div>
+  </main>
+
+  ${getInnerPageFooter(settings)}
+  
+  <script>
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobileMenu');
+      menu.classList.toggle('hidden');
+    }
+    
+    // Load products for this category
+    async function loadProducts() {
+      try {
+        const response = await fetch('/api/products?category=${slug}');
+        const data = await response.json();
+        if (data.success && data.data) {
+          const grid = document.getElementById('product-grid');
+          if (data.data.length === 0) {
+            grid.innerHTML = '<div class="col-span-full text-center py-12 text-neutral-500">В этой категории пока нет товаров</div>';
+            return;
+          }
+          grid.innerHTML = data.data.map(p => \`
+            <a href="/product/\${p.slug}" class="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all overflow-hidden border border-neutral-100">
+              <div class="aspect-video overflow-hidden">
+                <img src="\${p.main_image || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&h=400&fit=crop'}" 
+                     alt="\${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+              </div>
+              <div class="p-5">
+                \${p.is_hit ? '<span class="inline-block px-3 py-1 bg-accent-100 text-accent-700 text-xs font-semibold rounded-full mb-3">Хит продаж</span>' : ''}
+                <h3 class="text-lg font-semibold text-neutral-800 mb-2 group-hover:text-primary-600">\${p.name}</h3>
+                <p class="text-neutral-600 text-sm mb-4 line-clamp-2">\${p.short_description || ''}</p>
+                <div class="flex items-center justify-between">
+                  <span class="text-xl font-bold text-primary-600">\${p.price ? p.price.toLocaleString('ru-RU') + ' ₽' : 'По запросу'}</span>
+                  <span class="text-sm text-neutral-400 group-hover:text-primary-600 transition-colors">Подробнее →</span>
+                </div>
+              </div>
+            </a>
+          \`).join('');
+        }
+      } catch(e) { 
+        console.error('Error loading products', e);
+        document.getElementById('product-grid').innerHTML = '<div class="col-span-full text-center py-12 text-red-500">Ошибка загрузки товаров</div>';
+      }
+    }
+    
+    document.addEventListener('DOMContentLoaded', loadProducts);
+  </script>
+  `
+  
+  return c.html(renderPage(category.name, content, `${category.seo_title || category.name + ' | USSIL'}`, 
+    category.seo_description || `${category.name} от производителя. Цены, характеристики, доставка по России.`, settings))
+})
+
 // Product page
 app.get('/product/:slug', async (c) => {
   const slug = c.req.param('slug')
