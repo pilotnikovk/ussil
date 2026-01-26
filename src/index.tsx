@@ -1377,7 +1377,9 @@ app.get('/', async (c) => {
         const data = await response.json();
         if (data.success && data.data) {
           const products = data.data.slice(0, 6);
-          grid.innerHTML = products.map(p => \`
+          grid.innerHTML = products.map(p => {
+            const priceWithVAT = p.price ? Math.round(p.price * 1.22) : null;
+            return \`
             <a href="/product/\${p.slug}" class="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all overflow-hidden">
               <div class="aspect-video overflow-hidden">
                 <img src="\${p.main_image || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&h=400&fit=crop'}" 
@@ -1387,13 +1389,13 @@ app.get('/', async (c) => {
                 \${p.is_hit ? '<span class="inline-block px-3 py-1 bg-accent-100 text-accent-700 text-xs font-semibold rounded-full mb-3">Хит продаж</span>' : ''}
                 <h3 class="text-lg font-semibold text-neutral-800 mb-2 group-hover:text-primary-600">\${p.name}</h3>
                 <p class="text-neutral-600 text-sm mb-4">\${p.short_description || ''}</p>
-                <div class="flex items-center justify-between">
-                  <span class="text-2xl font-bold text-primary-600">\${p.price ? p.price.toLocaleString('ru-RU') + ' ₽' : 'По запросу'}</span>
-                  <span class="text-sm text-neutral-400 group-hover:text-primary-600 transition-colors">Подробнее →</span>
+                <div class="flex flex-col">
+                  <span class="text-2xl font-bold text-primary-600">\${priceWithVAT ? priceWithVAT.toLocaleString('ru-RU') + ' ₽' : 'По запросу'}</span>
+                  <span class="text-xs text-neutral-400 mt-1">с НДС 22%</span>
                 </div>
               </div>
             </a>
-          \`).join('');
+          \`}).join('');
         }
       } catch(e) { console.error('Error loading products', e); }
     }
@@ -1590,7 +1592,9 @@ app.get('/katalog/:slug', async (c) => {
             grid.innerHTML = '<div class="col-span-full text-center py-12 text-neutral-500">В этой категории пока нет товаров</div>';
             return;
           }
-          grid.innerHTML = data.data.map(p => \`
+          grid.innerHTML = data.data.map(p => {
+            const priceWithVAT = p.price ? Math.round(p.price * 1.22) : null;
+            return \`
             <a href="/product/\${p.slug}" class="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all overflow-hidden border border-neutral-100">
               <div class="aspect-video overflow-hidden">
                 <img src="\${p.main_image || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&h=400&fit=crop'}" 
@@ -1600,13 +1604,13 @@ app.get('/katalog/:slug', async (c) => {
                 \${p.is_hit ? '<span class="inline-block px-3 py-1 bg-accent-100 text-accent-700 text-xs font-semibold rounded-full mb-3">Хит продаж</span>' : ''}
                 <h3 class="text-lg font-semibold text-neutral-800 mb-2 group-hover:text-primary-600">\${p.name}</h3>
                 <p class="text-neutral-600 text-sm mb-4 line-clamp-2">\${p.short_description || ''}</p>
-                <div class="flex items-center justify-between">
-                  <span class="text-xl font-bold text-primary-600">\${p.price ? p.price.toLocaleString('ru-RU') + ' ₽' : 'По запросу'}</span>
-                  <span class="text-sm text-neutral-400 group-hover:text-primary-600 transition-colors">Подробнее →</span>
+                <div class="flex flex-col">
+                  <span class="text-xl font-bold text-primary-600">\${priceWithVAT ? priceWithVAT.toLocaleString('ru-RU') + ' ₽' : 'По запросу'}</span>
+                  <span class="text-xs text-neutral-400 mt-1">с НДС 22%</span>
                 </div>
               </div>
             </a>
-          \`).join('');
+          \`}).join('');
         }
       } catch(e) { 
         console.error('Error loading products', e);
@@ -1692,6 +1696,213 @@ app.get('/product/:slug', async (c) => {
       const menu = document.getElementById('mobileMenu');
       menu.classList.toggle('hidden');
     }
+    
+    // Load product details
+    async function loadProductDetail() {
+      const container = document.getElementById('product-detail');
+      const slug = container.dataset.slug;
+      
+      try {
+        const response = await fetch('/api/products/' + slug);
+        const data = await response.json();
+        
+        if (!data.success || !data.data) {
+          container.innerHTML = '<div class="text-center py-12"><h2 class="text-2xl font-bold text-red-500">Товар не найден</h2><a href="/katalog" class="mt-4 inline-block text-primary-600 hover:underline">← Вернуться в каталог</a></div>';
+          return;
+        }
+        
+        const product = data.data;
+        
+        // Parse specifications
+        let specs = {};
+        try {
+          specs = product.specifications ? (typeof product.specifications === 'string' ? JSON.parse(product.specifications) : product.specifications) : {};
+        } catch(e) { specs = {}; }
+        
+        // Calculate price with VAT 22%
+        const priceWithVAT = product.price ? Math.round(product.price * 1.22) : null;
+        const oldPriceWithVAT = product.old_price ? Math.round(product.old_price * 1.22) : null;
+        
+        // Build specifications HTML
+        const specKeys = ['Общая длина', 'Грузоподъемность', 'Длина площадки', 'Длина подъема', 'Высота подъема', 'Рабочая ширина рампы', 'Транспортировочные колеса', 'Подъемное устройство'];
+        let specsHtml = '';
+        specKeys.forEach(key => {
+          if (specs[key]) {
+            specsHtml += '<div class="flex justify-between py-3 border-b border-neutral-100"><span class="text-neutral-600">' + key + '</span><span class="font-semibold text-neutral-800">' + specs[key] + '</span></div>';
+          }
+        });
+        
+        // Add any extra specs
+        Object.keys(specs).forEach(key => {
+          if (!specKeys.includes(key) && specs[key]) {
+            specsHtml += '<div class="flex justify-between py-3 border-b border-neutral-100"><span class="text-neutral-600">' + key + '</span><span class="font-semibold text-neutral-800">' + specs[key] + '</span></div>';
+          }
+        });
+        
+        // Parse images
+        let images = [];
+        try {
+          images = product.images ? (typeof product.images === 'string' ? JSON.parse(product.images) : product.images) : [];
+        } catch(e) { images = []; }
+        
+        const mainImage = product.main_image || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&h=600&fit=crop';
+        
+        container.innerHTML = \`
+          <nav class="text-sm text-neutral-500 mb-6">
+            <a href="/" class="hover:text-primary-600">Главная</a> / 
+            <a href="/katalog" class="hover:text-primary-600">Каталог</a> / 
+            <span class="text-neutral-800">\${product.name}</span>
+          </nav>
+          
+          <div class="grid lg:grid-cols-2 gap-8 lg:gap-12">
+            <!-- Product Images -->
+            <div class="space-y-4">
+              <div class="aspect-video rounded-2xl overflow-hidden bg-neutral-100">
+                <img id="main-product-image" src="\${mainImage}" alt="\${product.name}" class="w-full h-full object-cover">
+              </div>
+              \${images.length > 0 ? \`
+                <div class="grid grid-cols-4 gap-2">
+                  <button onclick="changeMainImage('\${mainImage}')" class="aspect-video rounded-lg overflow-hidden border-2 border-primary-500">
+                    <img src="\${mainImage}" alt="" class="w-full h-full object-cover">
+                  </button>
+                  \${images.slice(0, 3).map(img => \`
+                    <button onclick="changeMainImage('\${img}')" class="aspect-video rounded-lg overflow-hidden border-2 border-transparent hover:border-primary-500 transition-colors">
+                      <img src="\${img}" alt="" class="w-full h-full object-cover">
+                    </button>
+                  \`).join('')}
+                </div>
+              \` : ''}
+            </div>
+            
+            <!-- Product Info -->
+            <div class="space-y-6">
+              <div>
+                \${product.is_hit ? '<span class="inline-block px-3 py-1 bg-accent-100 text-accent-700 text-xs font-semibold rounded-full mb-3">Хит продаж</span>' : ''}
+                \${product.is_new ? '<span class="inline-block px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full mb-3 ml-2">Новинка</span>' : ''}
+                <h1 class="text-2xl lg:text-3xl font-bold text-neutral-800 mb-2">\${product.name}</h1>
+                <p class="text-neutral-600">\${product.short_description || ''}</p>
+              </div>
+              
+              <div class="bg-neutral-50 rounded-2xl p-6">
+                <div class="flex items-baseline gap-4 mb-2">
+                  \${priceWithVAT ? \`
+                    <span class="text-3xl font-bold text-primary-600">\${priceWithVAT.toLocaleString('ru-RU')} ₽</span>
+                    \${oldPriceWithVAT ? \`<span class="text-xl text-neutral-400 line-through">\${oldPriceWithVAT.toLocaleString('ru-RU')} ₽</span>\` : ''}
+                  \` : '<span class="text-2xl font-bold text-primary-600">Цена по запросу</span>'}
+                </div>
+                <p class="text-sm text-neutral-500">Цена указана с НДС 22%</p>
+                
+                <div class="flex items-center gap-3 mt-4">
+                  \${product.in_stock 
+                    ? '<span class="flex items-center gap-2 text-green-600"><i class="fas fa-check-circle"></i> В наличии</span>'
+                    : '<span class="flex items-center gap-2 text-orange-600"><i class="fas fa-clock"></i> Под заказ</span>'
+                  }
+                </div>
+                
+                <div class="flex flex-col sm:flex-row gap-3 mt-6">
+                  <a href="#contact-form" class="flex-1 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl text-center transition-colors">
+                    <i class="fas fa-phone-alt mr-2"></i> Заказать звонок
+                  </a>
+                  <a href="https://wa.me/89209160100?text=\${encodeURIComponent('Здравствуйте! Интересует товар: ' + product.name)}" target="_blank" 
+                     class="flex-1 px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl text-center transition-colors">
+                    <i class="fab fa-whatsapp mr-2"></i> WhatsApp
+                  </a>
+                </div>
+              </div>
+              
+              \${specsHtml ? \`
+                <div class="bg-white border border-neutral-200 rounded-2xl p-6">
+                  <h2 class="text-lg font-bold text-neutral-800 mb-4"><i class="fas fa-list-alt mr-2 text-primary-500"></i> Характеристики</h2>
+                  <div class="divide-y divide-neutral-100">
+                    \${specsHtml}
+                  </div>
+                </div>
+              \` : ''}
+              
+              <div class="grid grid-cols-2 gap-4">
+                <div class="bg-blue-50 rounded-xl p-4 text-center">
+                  <i class="fas fa-shield-alt text-2xl text-blue-600 mb-2"></i>
+                  <p class="text-sm font-semibold text-neutral-800">Гарантия 24 мес</p>
+                </div>
+                <div class="bg-green-50 rounded-xl p-4 text-center">
+                  <i class="fas fa-truck text-2xl text-green-600 mb-2"></i>
+                  <p class="text-sm font-semibold text-neutral-800">Доставка по РФ</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          \${product.full_description ? \`
+            <div class="mt-12 bg-white border border-neutral-200 rounded-2xl p-6 lg:p-8">
+              <h2 class="text-xl font-bold text-neutral-800 mb-4">Описание</h2>
+              <div class="prose max-w-none text-neutral-600">\${product.full_description}</div>
+            </div>
+          \` : ''}
+          
+          <!-- Contact Form Section -->
+          <section id="contact-form" class="mt-12 bg-gradient-to-br from-primary-600 to-primary-800 rounded-2xl p-6 lg:p-10">
+            <div class="max-w-2xl mx-auto text-center text-white">
+              <h2 class="text-2xl lg:text-3xl font-bold mb-4">Получить консультацию</h2>
+              <p class="mb-6 text-primary-100">Оставьте заявку и наш менеджер свяжется с вами в ближайшее время</p>
+              <form id="product-lead-form" class="space-y-4">
+                <input type="hidden" name="product_id" value="\${product.id}">
+                <input type="hidden" name="product_name" value="\${product.name}">
+                <div class="grid sm:grid-cols-2 gap-4">
+                  <input type="text" name="name" placeholder="Ваше имя" required class="w-full px-4 py-3 rounded-xl border-0 text-neutral-800 placeholder-neutral-400">
+                  <input type="tel" name="phone" placeholder="Телефон" required class="w-full px-4 py-3 rounded-xl border-0 text-neutral-800 placeholder-neutral-400">
+                </div>
+                <textarea name="message" placeholder="Сообщение (необязательно)" rows="3" class="w-full px-4 py-3 rounded-xl border-0 text-neutral-800 placeholder-neutral-400"></textarea>
+                <button type="submit" class="w-full sm:w-auto px-8 py-3 bg-accent-500 hover:bg-accent-600 text-white font-semibold rounded-xl transition-colors">
+                  <i class="fas fa-paper-plane mr-2"></i> Отправить заявку
+                </button>
+              </form>
+            </div>
+          </section>
+        \`;
+        
+        // Update page title
+        document.title = product.name + ' | USSIL';
+        
+        // Handle form submission
+        document.getElementById('product-lead-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const formData = new FormData(e.target);
+          const data = {
+            name: formData.get('name'),
+            phone: formData.get('phone'),
+            message: formData.get('message') + ' [Товар: ' + formData.get('product_name') + ']',
+            source: 'product_page'
+          };
+          
+          try {
+            const response = await fetch('/api/leads', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data)
+            });
+            
+            if (response.ok) {
+              alert('Спасибо! Ваша заявка отправлена. Мы свяжемся с вами в ближайшее время.');
+              e.target.reset();
+            } else {
+              alert('Ошибка отправки. Позвоните нам по телефону.');
+            }
+          } catch (err) {
+            alert('Ошибка отправки. Позвоните нам по телефону.');
+          }
+        });
+        
+      } catch(e) {
+        console.error('Error loading product', e);
+        container.innerHTML = '<div class="text-center py-12"><h2 class="text-2xl font-bold text-red-500">Ошибка загрузки товара</h2><a href="/katalog" class="mt-4 inline-block text-primary-600 hover:underline">← Вернуться в каталог</a></div>';
+      }
+    }
+    
+    function changeMainImage(src) {
+      document.getElementById('main-product-image').src = src;
+    }
+    
+    document.addEventListener('DOMContentLoaded', loadProductDetail);
   </script>
   `
   
@@ -2785,9 +2996,49 @@ app.get('/admin', async (c) => {
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-neutral-700 mb-2">Характеристики (JSON)</label>
-          <textarea name="specifications" rows="4" class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 font-mono text-sm" placeholder='{"Грузоподъемность": "7 тонн", "Длина": "9 м"}'></textarea>
-          <p class="text-xs text-neutral-500 mt-1">Формат JSON: {"Параметр": "Значение"}</p>
+          <label class="block text-sm font-medium text-neutral-700 mb-3">Характеристики</label>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-neutral-50 rounded-xl">
+            <div>
+              <label class="block text-xs font-medium text-neutral-600 mb-1">Общая длина</label>
+              <input type="text" name="spec_length" class="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm" placeholder="9 м">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-neutral-600 mb-1">Грузоподъемность</label>
+              <input type="text" name="spec_capacity" class="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm" placeholder="7 тонн">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-neutral-600 mb-1">Длина площадки</label>
+              <input type="text" name="spec_platform_length" class="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm" placeholder="3 м">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-neutral-600 mb-1">Длина подъема</label>
+              <input type="text" name="spec_lift_length" class="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm" placeholder="6 м">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-neutral-600 mb-1">Высота подъема</label>
+              <input type="text" name="spec_lift_height" class="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm" placeholder="1100-1600 мм">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-neutral-600 mb-1">Рабочая ширина рампы</label>
+              <input type="text" name="spec_width" class="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm" placeholder="2000/2400 мм">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-neutral-600 mb-1">Транспортировочные колеса</label>
+              <input type="text" name="spec_wheels" class="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm" placeholder="пневматические R-15">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-neutral-600 mb-1">Подъемное устройство</label>
+              <input type="text" name="spec_lift_device" class="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm" placeholder="Модульная опора">
+            </div>
+          </div>
+          <div class="mt-3">
+            <label class="block text-xs font-medium text-neutral-600 mb-1">Дополнительные характеристики</label>
+            <div id="extra-specs" class="space-y-2"></div>
+            <button type="button" onclick="addExtraSpec()" class="mt-2 text-sm text-blue-600 hover:text-blue-700">
+              <i class="fas fa-plus mr-1"></i> Добавить характеристику
+            </button>
+          </div>
+          <input type="hidden" name="specifications" id="specifications-json">
         </div>
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -3169,6 +3420,9 @@ app.get('/admin', async (c) => {
       form.reset();
       document.getElementById('productId').value = '';
       
+      // Clear extra specs
+      document.getElementById('extra-specs').innerHTML = '';
+      
       if (product) {
         title.textContent = 'Редактировать товар';
         document.getElementById('productId').value = product.id;
@@ -3182,7 +3436,31 @@ app.get('/admin', async (c) => {
         form.full_description.value = product.full_description || '';
         form.main_image.value = product.main_image || '';
         form.images.value = (product.images ? (typeof product.images === 'string' ? JSON.parse(product.images) : product.images) : []).join('\\n');
-        form.specifications.value = product.specifications ? (typeof product.specifications === 'string' ? product.specifications : JSON.stringify(product.specifications, null, 2)) : '';
+        
+        // Parse specifications into form fields
+        let specs = {};
+        try {
+          specs = product.specifications ? (typeof product.specifications === 'string' ? JSON.parse(product.specifications) : product.specifications) : {};
+        } catch(e) { specs = {}; }
+        
+        // Fill standard spec fields
+        form.spec_length.value = specs['Общая длина'] || '';
+        form.spec_capacity.value = specs['Грузоподъемность'] || '';
+        form.spec_platform_length.value = specs['Длина площадки'] || '';
+        form.spec_lift_length.value = specs['Длина подъема'] || '';
+        form.spec_lift_height.value = specs['Высота подъема'] || '';
+        form.spec_width.value = specs['Рабочая ширина рампы'] || '';
+        form.spec_wheels.value = specs['Транспортировочные колеса'] || '';
+        form.spec_lift_device.value = specs['Подъемное устройство'] || '';
+        
+        // Add extra specs
+        const standardKeys = ['Общая длина', 'Грузоподъемность', 'Длина площадки', 'Длина подъема', 'Высота подъема', 'Рабочая ширина рампы', 'Транспортировочные колеса', 'Подъемное устройство'];
+        Object.keys(specs).forEach(key => {
+          if (!standardKeys.includes(key) && specs[key]) {
+            addExtraSpec(key, specs[key]);
+          }
+        });
+        
         form.in_stock.checked = !!product.in_stock;
         form.is_hit.checked = !!product.is_hit;
         form.is_new.checked = !!product.is_new;
@@ -3194,6 +3472,15 @@ app.get('/admin', async (c) => {
         title.textContent = 'Добавить товар';
         form.is_active.checked = true;
         form.in_stock.checked = true;
+        // Clear spec fields
+        form.spec_length.value = '';
+        form.spec_capacity.value = '';
+        form.spec_platform_length.value = '';
+        form.spec_lift_length.value = '';
+        form.spec_lift_height.value = '';
+        form.spec_width.value = '';
+        form.spec_wheels.value = '';
+        form.spec_lift_device.value = '';
       }
       
       modal.classList.add('active');
@@ -3217,6 +3504,46 @@ app.get('/admin', async (c) => {
       loadDashboard();
     }
 
+    // Add extra specification field
+    function addExtraSpec(key = '', value = '') {
+      const container = document.getElementById('extra-specs');
+      const idx = container.children.length;
+      const div = document.createElement('div');
+      div.className = 'flex gap-2';
+      div.innerHTML = \`
+        <input type="text" name="extra_spec_key_\${idx}" value="\${key}" class="flex-1 px-3 py-2 rounded-lg border border-neutral-200 text-sm" placeholder="Название">
+        <input type="text" name="extra_spec_val_\${idx}" value="\${value}" class="flex-1 px-3 py-2 rounded-lg border border-neutral-200 text-sm" placeholder="Значение">
+        <button type="button" onclick="this.parentElement.remove()" class="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg"><i class="fas fa-times"></i></button>
+      \`;
+      container.appendChild(div);
+    }
+    
+    // Collect specifications from form
+    function collectSpecifications(form) {
+      const specs = {};
+      
+      // Standard fields
+      if (form.spec_length.value) specs['Общая длина'] = form.spec_length.value;
+      if (form.spec_capacity.value) specs['Грузоподъемность'] = form.spec_capacity.value;
+      if (form.spec_platform_length.value) specs['Длина площадки'] = form.spec_platform_length.value;
+      if (form.spec_lift_length.value) specs['Длина подъема'] = form.spec_lift_length.value;
+      if (form.spec_lift_height.value) specs['Высота подъема'] = form.spec_lift_height.value;
+      if (form.spec_width.value) specs['Рабочая ширина рампы'] = form.spec_width.value;
+      if (form.spec_wheels.value) specs['Транспортировочные колеса'] = form.spec_wheels.value;
+      if (form.spec_lift_device.value) specs['Подъемное устройство'] = form.spec_lift_device.value;
+      
+      // Extra fields
+      let i = 0;
+      while (form['extra_spec_key_' + i]) {
+        const key = form['extra_spec_key_' + i].value.trim();
+        const val = form['extra_spec_val_' + i].value.trim();
+        if (key && val) specs[key] = val;
+        i++;
+      }
+      
+      return specs;
+    }
+
     document.getElementById('productForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const form = e.target;
@@ -3227,13 +3554,7 @@ app.get('/admin', async (c) => {
         images = form.images.value.split('\\n').filter(url => url.trim());
       } catch (e) {}
       
-      let specifications = {};
-      try {
-        specifications = form.specifications.value ? JSON.parse(form.specifications.value) : {};
-      } catch (e) {
-        alert('Неверный формат характеристик (JSON)');
-        return;
-      }
+      const specifications = collectSpecifications(form);
       
       const data = {
         name: form.name.value,
