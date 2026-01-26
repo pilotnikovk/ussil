@@ -787,9 +787,9 @@ app.post('/api/admin/upload', async (c) => {
       return c.json({ success: false, error: 'Недопустимый тип файла. Разрешены: JPEG, PNG, GIF, WebP, SVG' }, 400)
     }
     
-    // Max 10MB
-    if (file.size > 10 * 1024 * 1024) {
-      return c.json({ success: false, error: 'Файл слишком большой. Максимум 10 МБ' }, 400)
+    // Max 500KB for base64 storage (D1 has ~1MB limit per string)
+    if (file.size > 500 * 1024) {
+      return c.json({ success: false, error: 'Файл слишком большой. Максимум 500 КБ. Сожмите изображение перед загрузкой.' }, 400)
     }
     
     const arrayBuffer = await file.arrayBuffer()
@@ -839,18 +839,30 @@ app.post('/api/admin/upload', async (c) => {
       imageUrl = 'data:' + file.type + ';base64,' + arrayBufferToBase64(arrayBuffer)
     }
     
-    // Store in database
-    const result = await c.env.DB.prepare(`
-      INSERT INTO uploads (filename, original_name, mime_type, size, url)
-      VALUES (?, ?, ?, ?, ?)
-    `).bind(filename, file.name, file.type, file.size, imageUrl).run()
-    
-    return c.json({ 
-      success: true, 
-      url: imageUrl,
-      id: result.meta.last_row_id,
-      filename: file.name 
-    })
+    // Store in database (only metadata, URL may be truncated for large base64)
+    try {
+      const result = await c.env.DB.prepare(`
+        INSERT INTO uploads (filename, original_name, mime_type, size, url)
+        VALUES (?, ?, ?, ?, ?)
+      `).bind(filename, file.name, file.type, file.size, imageUrl).run()
+      
+      return c.json({ 
+        success: true, 
+        url: imageUrl,
+        id: result.meta.last_row_id,
+        filename: file.name 
+      })
+    } catch (dbError: any) {
+      // If database insert fails (too big), still return the URL
+      console.error('DB insert failed:', dbError)
+      return c.json({ 
+        success: true, 
+        url: imageUrl,
+        id: null,
+        filename: file.name,
+        warning: 'Image saved but not logged to database'
+      })
+    }
   } catch (e: any) {
     return c.json({ success: false, error: e.message || 'Upload failed' }, 500)
   }
@@ -3876,15 +3888,82 @@ app.get('/admin', async (c) => {
       }
     });
 
-    // ===== Image Upload =====
+    // ===== Image Compression & Upload =====
+    
+    // Compress image before upload (max 500KB, max 1920px width)
+    async function compressImage(file, maxWidth = 1920, quality = 0.8) {
+      return new Promise((resolve, reject) => {
+        // Skip compression for SVG
+        if (file.type === 'image/svg+xml') {
+          resolve(file);
+          return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            
+            // Scale down if too large
+            if (width > maxWidth) {
+              height = Math.round(height * maxWidth / width);
+              width = maxWidth;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Convert to blob
+            canvas.toBlob((blob) => {
+              if (blob) {
+                // Create new file from blob
+                const compressedFile = new File([blob], file.name, {
+                  type: 'image/jpeg',
+                  lastModified: Date.now()
+                });
+                resolve(compressedFile);
+              } else {
+                reject(new Error('Failed to compress image'));
+              }
+            }, 'image/jpeg', quality);
+          };
+          img.onerror = () => reject(new Error('Failed to load image'));
+          img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+      });
+    }
+    
     async function uploadImage(input, formId, fieldName) {
       const file = input.files[0];
       if (!file) return;
       
-      const formData = new FormData();
-      formData.append('file', file);
-      
       try {
+        // Show loading
+        const btn = input.closest('div').querySelector('button');
+        if (btn) btn.disabled = true;
+        
+        // Compress image if larger than 400KB
+        let fileToUpload = file;
+        if (file.size > 400 * 1024 && file.type !== 'image/svg+xml') {
+          try {
+            fileToUpload = await compressImage(file, 1920, 0.75);
+            console.log('Compressed from', file.size, 'to', fileToUpload.size);
+          } catch (compErr) {
+            console.warn('Compression failed, using original:', compErr);
+          }
+        }
+        
+        const formData = new FormData();
+        formData.append('file', fileToUpload);
+        
         const response = await fetch('/api/admin/upload', {
           method: 'POST',
           body: formData
@@ -3900,24 +3979,39 @@ app.get('/admin', async (c) => {
             if (img) img.src = data.url;
             previewEl.classList.remove('hidden');
           }
-          alert('Изображение загружено!');
+          alert('Изображение загружено!' + (data.warning ? ' (Внимание: ' + data.warning + ')' : ''));
         } else {
           alert('Ошибка загрузки: ' + (data.error || 'Неизвестная ошибка'));
         }
       } catch (e) {
-        alert('Ошибка загрузки изображения');
+        console.error('Upload error:', e);
+        alert('Ошибка загрузки изображения: ' + e.message);
+      } finally {
+        const btn = input.closest('div').querySelector('button');
+        if (btn) btn.disabled = false;
       }
     }
 
-    // Settings image upload
+    // Settings image upload with compression
     async function uploadSettingsImage(input, fieldName) {
       const file = input.files[0];
       if (!file) return;
       
-      const formData = new FormData();
-      formData.append('file', file);
-      
       try {
+        // Compress image if larger than 400KB
+        let fileToUpload = file;
+        if (file.size > 400 * 1024 && file.type !== 'image/svg+xml') {
+          try {
+            fileToUpload = await compressImage(file, 1920, 0.75);
+            console.log('Compressed from', file.size, 'to', fileToUpload.size);
+          } catch (compErr) {
+            console.warn('Compression failed, using original:', compErr);
+          }
+        }
+        
+        const formData = new FormData();
+        formData.append('file', fileToUpload);
+        
         const response = await fetch('/api/admin/upload', {
           method: 'POST',
           body: formData
@@ -3933,12 +4027,13 @@ app.get('/admin', async (c) => {
             if (img) img.src = data.url;
             previewEl.classList.remove('hidden');
           }
-          alert('Изображение загружено!');
+          alert('Изображение загружено!' + (data.warning ? ' (Внимание: ' + data.warning + ')' : ''));
         } else {
           alert('Ошибка загрузки: ' + (data.error || 'Неизвестная ошибка'));
         }
       } catch (e) {
-        alert('Ошибка загрузки изображения');
+        console.error('Upload error:', e);
+        alert('Ошибка загрузки изображения: ' + e.message);
       }
     }
 
