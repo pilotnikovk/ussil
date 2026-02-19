@@ -887,6 +887,7 @@ const renderPage = (title: string, content: string, seoTitle?: string, seoDescri
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${seoTitle || title} | ${siteName}</title>
+  <meta name="yandex-verification" content="e392f1a129e5c15b" />
   <meta name="description" content="${seoDescription || 'Производитель погрузочных рамп и эстакад. Собственное производство, гарантия качества, доставка по России.'}">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   
